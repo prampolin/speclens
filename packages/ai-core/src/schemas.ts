@@ -48,18 +48,35 @@ export const decisionResultSchema = z.object({
   abstained: z.boolean(),
 });
 
+export const classifyResultSchema = z.object({
+  intent: intentSchema.nullable(),
+  confidence: z.number().min(0).max(1).nullable(),
+  abstained: z.boolean(),
+  providerId: z.string().optional(),
+});
+
 export const indexedVectorSchema = z.object({
   id: z.string().min(1),
-  operationId: z.string().min(1),
+  operationId: z.string().optional(),
   vector: z.array(z.number()),
   metadata: z.record(z.unknown()).optional(),
 });
 
 export const vectorHitSchema = z.object({
   id: z.string().min(1),
-  operationId: z.string().min(1),
+  operationId: z.string().optional(),
   score: z.number(),
   metadata: z.record(z.unknown()).optional(),
+});
+
+export const vectorNamespaceKeySchema = z.object({
+  workspaceId: z.string().min(1),
+  specificationId: z.string().min(1),
+  providerId: z.string().min(1),
+  modelId: z.string().min(1),
+  modelRevision: z.string().min(1),
+  dimensions: z.number().int().positive(),
+  chunkingVersion: z.string().min(1),
 });
 
 export const sourceCitationSchema = z.object({
@@ -143,3 +160,22 @@ export const workspaceSettingsSchema = z.object({
     topK: z.number().int().positive(),
   }),
 });
+
+export {
+  executionLocationSchema as ExecutionLocationSchema,
+  providerKindSchema as ProviderKindSchema,
+  providerManifestSchema as ProviderManifestSchema,
+  providerReadinessSchema as ProviderReadinessSchema,
+  intentSchema as IntentSchema,
+  decisionResultSchema as DecisionResultSchema,
+  classifyResultSchema as ClassifyResultSchema,
+  indexedVectorSchema as IndexedVectorSchema,
+  vectorHitSchema as VectorHitSchema,
+  vectorNamespaceKeySchema as VectorNamespaceKeySchema,
+  sourceCitationSchema as SourceCitationSchema,
+  codeSnippetSchema as CodeSnippetSchema,
+  responseEnvelopeSchema as ResponseEnvelopeSchema,
+  explanationEventSchema as ExplanationEventSchema,
+  workspaceSettingsSchema as WorkspaceSettingsSchema,
+};
+

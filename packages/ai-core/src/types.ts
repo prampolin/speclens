@@ -49,9 +49,15 @@ export interface DecisionResult {
   abstained: boolean;
 }
 
+export type ReadinessResult = ProviderReadiness;
+
+export interface ClassifyResult extends DecisionResult {
+  providerId?: string;
+}
+
 export interface DecisionProvider {
   manifest: ProviderManifest;
-  classify(input: string, candidates: Intent[], signal?: AbortSignal): Promise<DecisionResult>;
+  classify(input: string, candidates?: Intent[], signal?: AbortSignal): Promise<ClassifyResult>;
   readiness(): Promise<ProviderReadiness>;
 }
 
@@ -72,14 +78,14 @@ export interface LLMProvider {
 
 export interface IndexedVector {
   id: string;
-  operationId: string;
+  operationId?: string;
   vector: number[];
   metadata?: Record<string, unknown>;
 }
 
 export interface VectorHit {
   id: string;
-  operationId: string;
+  operationId?: string;
   score: number;
   metadata?: Record<string, unknown>;
 }
@@ -88,6 +94,16 @@ export interface VectorIndex {
   upsert(namespace: string, vectors: IndexedVector[]): Promise<void>;
   search(namespace: string, vector: number[], limit: number): Promise<VectorHit[]>;
   deleteNamespace(namespace: string): Promise<void>;
+}
+
+export interface VectorNamespaceKey {
+  workspaceId: string;
+  specificationId: string;
+  providerId: string;
+  modelId: string;
+  modelRevision: string;
+  dimensions: number;
+  chunkingVersion: string;
 }
 
 export interface SourceCitation {
