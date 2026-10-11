@@ -12,7 +12,7 @@
 
 ## Fases
 
-- [ ] **Fase 01: Foundation** — [`specs/01-foundation.md`](./specs/01-foundation.md)
+- [x] **Fase 01: Foundation** — [`specs/01-foundation.md`](./specs/01-foundation.md)
 - [ ] **Fase 02: Parser e normalização OpenAPI** — [`specs/02-openapi-parser.md`](./specs/02-openapi-parser.md)
 - [ ] **Fase 03: SQLite, workspaces e settings** — [`specs/03-storage-settings.md`](./specs/03-storage-settings.md)
 - [ ] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
@@ -35,8 +35,8 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 01 — Foundation (não iniciada).
-- **Fases concluídas:** nenhuma.
+- **Fase atual:** 02 — Parser e normalização OpenAPI (próxima).
+- **Fases concluídas:** 01 — Foundation (2026-10-11).
 - **Bloqueios:** nenhum confirmado; validar runtime do Laya e vector index nas respectivas fases.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -44,4 +44,5 @@
 
 | Data | Fase | Mudança | Evidência/testes | Estado |
 |---|---|---|---|---|
-| 2026-10-11 | Preparação | Documentação modular criada | Checklist inicial | Pendente |
+| 2026-10-11 | Preparação | Documentação modular criada | Checklist inicial | Concluída |
+| 2026-10-11 | Fase 01 | Monorepo PNPM, Next.js 15, contratos centrais @speclens/ai-core/openapi-core/db/codegen/evals, Vitest, lint, build | pnpm lint && pnpm test && pnpm build (10/10 testes ok) | Concluída |
