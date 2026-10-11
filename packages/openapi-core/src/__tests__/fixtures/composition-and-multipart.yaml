@@ -1,0 +1,48 @@
+openapi: "3.0.3"
+info:
+  title: "Composition and Multipart API"
+  version: "1.0.0"
+paths:
+  /upload:
+    post:
+      summary: "Upload binary file with metadata"
+      operationId: "uploadFile"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: "object"
+              properties:
+                file:
+                  type: "string"
+                  format: "binary"
+                description:
+                  type: "string"
+      responses:
+        "200":
+          description: "Upload successful"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SuccessResult"
+                  - $ref: "#/components/schemas/PartialResult"
+components:
+  schemas:
+    SuccessResult:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+        id:
+          type: "string"
+    PartialResult:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+        warnings:
+          type: "array"
+          items:
+            type: "string"
