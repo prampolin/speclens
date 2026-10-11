@@ -11,22 +11,30 @@ export interface HybridQuery {
   workspaceId: string;
   specificationId?: string;
   filters?: HybridQueryFilters;
-  topK: number;
+  topK?: number;
 }
 
 export interface RetrievalResult {
   operationId: string;
-  lexicalScore: number | null;
-  vectorScore: number | null;
+  specificationId: string;
+  method: string;
+  path: string;
+  lexicalScore: number | null; // null se lexical não contribuiu
+  vectorScore: number | null;  // null se vector não contribuiu
   fusedScore: number;
   rank: number;
+  lexicalRank: number | null;
+  vectorRank: number | null;
 }
 
 export interface FusionConfig {
-  algorithm: 'rrf' | 'weighted';
-  rrfK?: number;
-  lexicalWeight?: number;
-  vectorWeight?: number;
+  algorithm?: 'rrf' | 'weighted';
+  k?: number;            // fator RRF (default: 60)
+  rrfK?: number;         // alias/compat com scaffold anterior
+  lexicalWeight?: number; // peso na fusão (default: 0.5)
+  vectorWeight?: number;  // peso na fusão (default: 0.5)
+  topK?: number;          // número de resultados
+  threshold?: number;     // score mínimo para incluir
 }
 
 export interface HybridRetrieval {
@@ -49,15 +57,23 @@ export const hybridQuerySchema = z.object({
 
 export const retrievalResultSchema = z.object({
   operationId: z.string().min(1),
+  specificationId: z.string().min(1),
+  method: z.string().min(1),
+  path: z.string().min(1),
   lexicalScore: z.number().nullable(),
   vectorScore: z.number().nullable(),
   fusedScore: z.number(),
   rank: z.number().int().positive(),
+  lexicalRank: z.number().int().positive().nullable(),
+  vectorRank: z.number().int().positive().nullable(),
 });
 
 export const fusionConfigSchema = z.object({
-  algorithm: z.enum(['rrf', 'weighted']),
+  algorithm: z.enum(['rrf', 'weighted']).default('rrf'),
+  k: z.number().positive().default(60),
   rrfK: z.number().positive().optional(),
-  lexicalWeight: z.number().min(0).max(1).optional(),
-  vectorWeight: z.number().min(0).max(1).optional(),
+  lexicalWeight: z.number().min(0).max(1).default(0.5),
+  vectorWeight: z.number().min(0).max(1).default(0.5),
+  topK: z.number().int().positive().default(5),
+  threshold: z.number().min(0).optional(),
 });

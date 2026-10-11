@@ -16,7 +16,7 @@
 - [x] **Fase 02: Parser e normalização OpenAPI** — [`specs/02-openapi-parser.md`](./specs/02-openapi-parser.md)
 - [x] **Fase 03: SQLite, workspaces e settings** — [`specs/03-storage-settings.md`](./specs/03-storage-settings.md)
 - [x] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
-- [ ] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
+- [x] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
 - [x] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
 - [x] **Fase 07: Ollama e protocolo estruturado** — [`specs/07-ollama-llm.md`](./specs/07-ollama-llm.md)
 - [ ] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
@@ -35,9 +35,9 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 05 e 08 em paralelo (próximas após merge).
-- **Fases concluídas:** 01, 02, 03, 04, 06, 07 — todas em 2026-10-11.
-- **Bloqueios:** nenhum; validar runtime do Laya e vector index na Fase 05.
+- **Fase atual:** 08 (Codegen determinístico) e 09 (UI / Chat).
+- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07 — todas em 2026-10-11.
+- **Bloqueios:** nenhum.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
 ## Registro de execução
@@ -49,5 +49,6 @@
 | 2026-10-11 | Fase 02 | OpenAPI Parser e Normalização em @speclens/openapi-core, 7 fixtures, ref-resolver seguro, FTS text | pnpm test (18/18 testes ok) | Concluída |
 | 2026-10-11 | Fase 03 | SQLite better-sqlite3 v11, migrations versionadas, FTS5 triggers, repositories tipados, Zod validation | pnpm test && pnpm lint (19/19 testes ok) | Concluída |
 | 2026-10-11 | Fase 04 | EmbeddingProvider local, ProviderRegistry fail-closed, fingerprint SHA-256, LocalFlatVectorIndex, EmbeddingIndexer staging | pnpm test (29/29 testes ok) | Concluída |
+| 2026-10-11 | Fase 05 | HybridRetrievalImpl, RRF fusion determinístico, indexOperations FTS5+vetores, lazy hydration, baseline eval Recall@5=100% | vitest run packages/ai-core packages/evals (57/57 testes ok) | Concluída |
 | 2026-10-11 | Fase 06 | RuleDecisionProvider multilíngue PT/EN, LayaLocalProvider stub honesto, DecisionOrchestrator com fallback automático | pnpm test (29/29 testes ok) | Concluída |
 | 2026-10-11 | Fase 07 | OllamaLLMProvider, policy guard loopback, prompt injection safety, streaming NDJSON Zod, scaffold Fase 05 | pnpm test (20/20 testes ok) | Concluída |
