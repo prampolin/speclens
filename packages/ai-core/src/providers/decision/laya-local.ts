@@ -103,7 +103,8 @@ export class LayaLocalProvider implements DecisionProvider {
     // Se a biblioteca runtime não estiver instalada ou falhar na inferência, lança erro claro para acionar fallback.
     try {
       // Dynamic import to verify onnx runtime if available
-      const ort = await import('onnxruntime-node').catch(() => null);
+      const runtimeModule = 'onnxruntime-node';
+      const ort = await (import(runtimeModule) as Promise<unknown>).catch(() => null);
       if (!ort) {
         throw new Error(
           'Node ONNX runtime ("onnxruntime-node") is not installed. Validate Node ONNX runtime or configure Python sidecar (see spec.md §6.1).'

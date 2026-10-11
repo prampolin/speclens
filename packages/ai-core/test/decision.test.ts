@@ -4,7 +4,6 @@ import {
   LayaLocalProvider,
   DecisionOrchestrator,
   DecisionProvider,
-  ProviderManifest,
 } from '../src/index.js';
 
 describe('Decision Providers & DecisionOrchestrator', () => {

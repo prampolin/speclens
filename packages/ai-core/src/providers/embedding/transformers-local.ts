@@ -116,7 +116,20 @@ export class TransformersLocalEmbeddingProvider implements EmbeddingProvider {
     try {
       // Dynamic import to avoid hard crash if @huggingface/transformers is not yet in bundle
       // and configure environment to strictly disallow remote models when privateMode=true
-      const hf = await import('@huggingface/transformers');
+      interface HfModule {
+        env?: {
+          allowRemoteModels?: boolean;
+          allowLocalModels?: boolean;
+          localModelPath?: string;
+        };
+        pipeline: (
+          task: string,
+          model: string,
+          options?: { revision?: string; local_files_only?: boolean }
+        ) => Promise<unknown>;
+      }
+      const hfModule = '@huggingface/transformers';
+      const hf = (await (import(hfModule) as Promise<unknown>)) as HfModule;
       if (hf.env) {
         if (this.privateMode) {
           hf.env.allowRemoteModels = false;

@@ -7,7 +7,6 @@ import {
   PrivacyViolationError,
   LocalFlatVectorIndex,
   cosineSimilarity,
-  normalizeVector,
   namespaceId,
   areNamespacesCompatible,
   VectorNamespaceKey,
@@ -23,7 +22,9 @@ describe('TransformersLocalEmbeddingProvider & VectorIndex', () => {
   afterEach(() => {
     try {
       rmSync(testDir, { recursive: true, force: true });
-    } catch {}
+    } catch {
+      void testDir;
+    }
   });
 
   it('fails readiness and throws PrivacyViolationError on embed when model is missing and privateMode=true', async () => {

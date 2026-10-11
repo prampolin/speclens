@@ -5,7 +5,7 @@ import {
   VectorIndex,
   VectorNamespaceKey,
 } from '../types.js';
-import { areNamespacesCompatible, namespaceId } from './namespace.js';
+import { areNamespacesCompatible } from './namespace.js';
 
 export interface IndexerResult {
   namespace: string;

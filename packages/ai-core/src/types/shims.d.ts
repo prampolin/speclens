@@ -8,11 +8,11 @@ declare module '@huggingface/transformers' {
     task: string,
     model: string,
     options?: { revision?: string; local_files_only?: boolean }
-  ): Promise<any>;
+  ): Promise<unknown>;
 }
 
 declare module 'onnxruntime-node' {
   export class InferenceSession {
-    static create(path: string): Promise<any>;
+    static create(path: string): Promise<unknown>;
   }
 }
