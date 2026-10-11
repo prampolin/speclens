@@ -135,7 +135,7 @@ export class OperationRepository {
     }>
   ): void {
     const stmt = this.db.prepare(`
-      INSERT INTO operations (
+      INSERT OR REPLACE INTO operations (
         id, specification_id, method, path, operation_id,
         tags, normalized_json, source_pointer, index_text, created_at
       )

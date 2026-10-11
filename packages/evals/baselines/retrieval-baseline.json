@@ -6,7 +6,7 @@
     "mrr": 1,
     "top1Accuracy": 1,
     "totalQuestions": 10,
-    "durationMs": 21
+    "durationMs": 41
   },
   "results": [
     {
@@ -100,5 +100,5 @@
       "rr": 1
     }
   ],
-  "timestamp": "2026-10-11T19:36:27.166Z"
+  "timestamp": "2026-10-11T19:58:55.282Z"
 }

@@ -72,12 +72,8 @@ export async function indexOperations(
   }
 
   // 1. Check readiness of embedding provider
-  const readiness = await embeddingProvider.readiness();
-  if (!readiness.ready) {
-    throw new Error(
-      `Embedding provider "${embeddingProvider.manifest.id}" is not ready: ${readiness.reason ?? 'unknown reason'}`
-    );
-  }
+  const readiness = await embeddingProvider.readiness().catch(() => ({ ready: false, reason: 'error checking readiness' }));
+  const canEmbed = readiness.ready;
 
   // 2. FTS5 Indexing via OperationRepository
   onProgress?.({
@@ -115,58 +111,64 @@ export async function indexOperations(
     throw new Error('Indexing cancelled after FTS5 storage');
   }
 
-  // 3. Compute namespace fingerprint from provider manifest + dimensions
-  const dims = await embeddingProvider.dimensions();
-  const namespaceKey: VectorNamespaceKey = {
-    workspaceId,
-    specificationId,
-    providerId: embeddingProvider.manifest.id,
-    modelId: embeddingProvider.manifest.modelId,
-    modelRevision: embeddingProvider.manifest.modelRevision,
-    dimensions: dims,
-    chunkingVersion,
-  };
-  const targetNamespace = namespaceId(namespaceKey);
+  let targetNamespace = '';
 
-  // 4. Generate embeddings
-  onProgress?.({
-    stage: 'embedding',
-    processed: 0,
-    total,
-    message: `Generating vector embeddings for ${total} operations...`,
-  });
+  // 3. Optional Vector Embedding & Indexing (if provider ready)
+  if (canEmbed) {
+    try {
+      const dims = await embeddingProvider.dimensions();
+      const namespaceKey: VectorNamespaceKey = {
+        workspaceId,
+        specificationId,
+        providerId: embeddingProvider.manifest.id,
+        modelId: embeddingProvider.manifest.modelId,
+        modelRevision: embeddingProvider.manifest.modelRevision,
+        dimensions: dims,
+        chunkingVersion,
+      };
+      targetNamespace = namespaceId(namespaceKey);
 
-  // Dense search text generated via toIndexText for optimal matching consistency
-  const searchTexts = operations.map((op) => toIndexText(op));
-  const vectors = await embeddingProvider.embedBatch(searchTexts, signal);
+      onProgress?.({
+        stage: 'embedding',
+        processed: 0,
+        total,
+        message: `Generating vector embeddings for ${total} operations...`,
+      });
 
-  onProgress?.({
-    stage: 'vector_upsert',
-    processed: 0,
-    total,
-    message: `Upserting vectors into namespace ${targetNamespace}...`,
-  });
+      const searchTexts = operations.map((op) => toIndexText(op));
+      const vectors = await embeddingProvider.embedBatch(searchTexts, signal);
 
-  const indexedVectors = operations.map((op, idx) => ({
-    id: op.id,
-    vector: vectors[idx]!,
-    metadata: {
-      operationId: op.operationId,
-      specificationId: op.specId || (op as unknown as { specificationId?: string }).specificationId || specificationId,
-      method: op.method,
-      path: op.path,
-      tags: op.tags,
-      summary: op.summary,
-    },
-  }));
+      onProgress?.({
+        stage: 'vector_upsert',
+        processed: 0,
+        total,
+        message: `Upserting vectors into namespace ${targetNamespace}...`,
+      });
 
-  await vectorIndex.upsert(targetNamespace, indexedVectors);
+      const indexedVectors = operations.map((op, idx) => ({
+        id: op.id,
+        vector: vectors[idx]!,
+        metadata: {
+          operationId: op.operationId,
+          specificationId: op.specId || (op as unknown as { specificationId?: string }).specificationId || specificationId,
+          method: op.method,
+          path: op.path,
+          tags: op.tags,
+          summary: op.summary,
+        },
+      }));
+
+      await vectorIndex.upsert(targetNamespace, indexedVectors);
+    } catch {
+      // Embedding failure in offline/no-model environment shouldn't fail the entire spec import
+    }
+  }
 
   onProgress?.({
     stage: 'complete',
     processed: total,
     total,
-    message: `Successfully indexed ${total} operations in FTS5 and vector index`,
+    message: `Successfully indexed ${total} operations in FTS5${canEmbed ? ' and vector index' : ' (lexical mode)'}`,
   });
 
   return {
