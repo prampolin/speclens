@@ -72,7 +72,16 @@ function extractPropertiesAndRequired(schema?: Record<string, unknown>): Extract
   return result;
 }
 
+const SENSITIVE_KEY_REGEX = /^(password|passphrase|secret|client_secret|token|api_key|apikey|x-api-key|authorization)$/i;
+
+function isSensitiveFieldName(name: string): boolean {
+  return SENSITIVE_KEY_REGEX.test(name.trim());
+}
+
 function generatePlaceholderValue(fieldName: string, propSchema: Record<string, unknown>): unknown {
+  if (isSensitiveFieldName(fieldName) || propSchema.format === 'password') {
+    return `<YOUR_${fieldName.toUpperCase()}>`;
+  }
   const type = propSchema.type;
   if (type === 'integer' || type === 'number') {
     return 0;
@@ -233,7 +242,9 @@ export function buildRequestModel(
 
       // Ground or placeholder required fields
       for (const reqField of required) {
-        if (groundedValues && groundedValues[reqField] !== undefined) {
+        if (isSensitiveFieldName(reqField) || properties[reqField]?.format === 'password') {
+          example[reqField] = `<YOUR_${reqField.toUpperCase()}>`;
+        } else if (groundedValues && groundedValues[reqField] !== undefined) {
           example[reqField] = groundedValues[reqField];
         } else {
           const propSchema = properties[reqField] || {};
@@ -243,8 +254,12 @@ export function buildRequestModel(
 
       // Ground optional schema fields if provided in groundedValues
       for (const [propName] of Object.entries(properties)) {
-        if (!required.includes(propName) && groundedValues && groundedValues[propName] !== undefined) {
-          example[propName] = groundedValues[propName];
+        if (!required.includes(propName)) {
+          if (isSensitiveFieldName(propName) || properties[propName]?.format === 'password') {
+            example[propName] = `<YOUR_${propName.toUpperCase()}>`;
+          } else if (groundedValues && groundedValues[propName] !== undefined) {
+            example[propName] = groundedValues[propName];
+          }
         }
       }
 

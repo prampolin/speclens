@@ -28,3 +28,6 @@ export interface EvalReport {
 }
 
 export * from './retrieval-eval.js';
+export * from './privacy-eval.js';
+export * from './adversarial-eval.js';
+export * from './latency-eval.js';

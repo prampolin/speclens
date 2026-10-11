@@ -37,6 +37,17 @@ export {
   type QueryOrchestrator,
 } from './orchestration/index.js';
 
+export {
+  assertPrivateMode,
+  assertLocalProvider,
+  validateImportUrl,
+  validateRedirectUrl,
+  SSRFViolationError,
+  redactSensitive,
+  isSensitiveKey,
+} from './security/index.js';
+
+export * as security from './security/index.js';
 export * as llm from './llm/index.js';
 export * as retrieval from './retrieval/index.js';
 export * as orchestration from './orchestration/index.js';

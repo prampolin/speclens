@@ -6,6 +6,9 @@ import {
 } from './types.js';
 import { ProviderManifestSchema } from './schemas.js';
 import { PrivacyViolationError } from './errors.js';
+import { assertLocalProvider, assertPrivateMode } from '../security/private-mode-guard.js';
+
+export { assertLocalProvider, assertPrivateMode };
 
 export type AnyProvider = EmbeddingProvider | DecisionProvider;
 

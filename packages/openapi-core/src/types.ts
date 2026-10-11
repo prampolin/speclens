@@ -103,10 +103,15 @@ export interface ParsedDocument {
 export interface ParseOptions {
   maxSizeBytes?: number;
   filename?: string;
+  parseTimeoutMs?: number;
 }
 
 export interface RefResolverOptions {
   privateMode?: boolean;
   maxDepth?: number;
   onWarning?: (warning: string) => void;
+}
+
+export interface NormalizeOptions extends RefResolverOptions {
+  maxOperations?: number;
 }
