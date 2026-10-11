@@ -18,7 +18,7 @@
 - [ ] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
 - [ ] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
 - [ ] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
-- [ ] **Fase 07: Ollama e protocolo estruturado** — [`specs/07-ollama-llm.md`](./specs/07-ollama-llm.md)
+- [x] **Fase 07: Ollama e protocolo estruturado** — [`specs/07-ollama-llm.md`](./specs/07-ollama-llm.md)
 - [ ] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
 - [ ] **Fase 09: Chat, Settings e UI final** — [`specs/09-chat-ui.md`](./specs/09-chat-ui.md)
 - [ ] **Fase 10: Privacidade, segurança e benchmarks** — [`specs/10-security-evals.md`](./specs/10-security-evals.md)
@@ -36,7 +36,7 @@
 ## Estado e decisões
 
 - **Fase atual:** 02 — Parser e normalização OpenAPI (próxima).
-- **Fases concluídas:** 01 — Foundation (2026-10-11).
+- **Fases concluídas:** 01 — Foundation (2026-10-11); 07 — Ollama LLM (2026-10-11).
 - **Bloqueios:** nenhum confirmado; validar runtime do Laya e vector index nas respectivas fases.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -46,3 +46,4 @@
 |---|---|---|---|---|
 | 2026-10-11 | Preparação | Documentação modular criada | Checklist inicial | Concluída |
 | 2026-10-11 | Fase 01 | Monorepo PNPM, Next.js 15, contratos centrais @speclens/ai-core/openapi-core/db/codegen/evals, Vitest, lint, build | pnpm lint && pnpm test && pnpm build (10/10 testes ok) | Concluída |
+| 2026-10-11 | Fase 07 | Ollama LLM Provider, streaming NDJSON, validação Zod, policy guard local/cloud, scaffold de busca híbrida e orquestração | pnpm test (30/30 testes ok), pnpm build (0 erros) | Concluída |
