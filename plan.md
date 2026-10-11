@@ -22,7 +22,7 @@
 - [x] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
 - [x] **Fase 09: Chat, Settings e UI final** — [`specs/09-chat-ui.md`](./specs/09-chat-ui.md)
 - [x] **Fase 10: Privacidade, segurança e benchmarks** — [`specs/10-security-evals.md`](./specs/10-security-evals.md)
-- [ ] **Fase 11: Packaging e release local** — [`specs/11-release.md`](./specs/11-release.md)
+- [x] **Fase 11: Packaging e release local** — [`specs/11-release.md`](./specs/11-release.md)
 
 ## Regras inegociáveis
 
@@ -35,8 +35,8 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 11 (Packaging e release local).
-- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10 — todas em 2026-10-11.
+- **Fase atual:** Todas as fases concluídas (01 a 11).
+- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11 — todas em 2026-10-11.
 - **Bloqueios:** nenhum.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -55,4 +55,5 @@
 | 2026-10-11 | Fase 08 | Codegen determinístico cURL, fetch, Python, RequestModel canônico, placeholders rotulados, validação schema | pnpm --filter @speclens/codegen test (17/17 testes ok), pnpm test (121/121 testes ok) | Concluída |
 | 2026-10-11 | Fase 09 | Chat UI SSE streaming, Shiki snippets cURL/fetch/Python, Settings por workspace, RAG Inspector com ranking e JSON Pointer, bloqueio no reindex, acessibilidade | vitest run apps/web (11/11 testes ok), next build (5/5 páginas ok), vitest run (132/132 testes ok) | Concluída |
 | 2026-10-11 | Fase 10 | Fail-closed privateMode guard, SSRF URL validator, log redactor, limites parse/depth/timeout/quota, privacy & adversarial evals, baseline de latência e memória real | vitest run (16/16 suites PASS, 157/157 testes ok) | Concluída |
+| 2026-10-11 | Fase 11 | Dockerfile standalone, docker-compose loopback estrito (127.0.0.1:3000), provision-offline.sh, smoke-test.sh, README com mockup, ARCHITECTURE, SECURITY, LICENSE | vitest run (16/16 suites PASS, 157/157 testes ok), provision-offline.sh PASS, smoke-test.sh validado | Concluída |
 
