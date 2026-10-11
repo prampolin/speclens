@@ -35,8 +35,8 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 08 (Codegen determinístico) e 09 (UI / Chat).
-- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07 — todas em 2026-10-11.
+- **Fase atual:** 09 (UI / Chat).
+- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08 — todas em 2026-10-11.
 - **Bloqueios:** nenhum.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -52,3 +52,4 @@
 | 2026-10-11 | Fase 05 | HybridRetrievalImpl, RRF fusion determinístico, indexOperations FTS5+vetores, lazy hydration, baseline eval Recall@5=100% | vitest run packages/ai-core packages/evals (57/57 testes ok) | Concluída |
 | 2026-10-11 | Fase 06 | RuleDecisionProvider multilíngue PT/EN, LayaLocalProvider stub honesto, DecisionOrchestrator com fallback automático | pnpm test (29/29 testes ok) | Concluída |
 | 2026-10-11 | Fase 07 | OllamaLLMProvider, policy guard loopback, prompt injection safety, streaming NDJSON Zod, scaffold Fase 05 | pnpm test (20/20 testes ok) | Concluída |
+| 2026-10-11 | Fase 08 | Codegen determinístico cURL, fetch, Python, RequestModel canônico, placeholders rotulados, validação schema | pnpm --filter @speclens/codegen test (17/17 testes ok), pnpm test (121/121 testes ok) | Concluída |

@@ -41,8 +41,8 @@ Strictly follow these non-negotiable rules:
       .map((p) => `  - [${p.in}] ${p.name} (${p.required ? 'obrigatório' : 'opcional'}): ${p.description || ''}`)
       .join('\n');
 
-    const requestBodyDesc = (op.requestBodies && op.requestBodies.length > 0)
-      ? op.requestBodies.map((rb) => `${rb.mediaType}: ${rb.description || 'Definido'}`).join(', ')
+    const requestBodyDesc = op.requestBody?.content
+      ? Object.keys(op.requestBody.content).join(', ')
       : 'Nenhum';
 
     return `--- OPERAÇÃO #${idx + 1} ---

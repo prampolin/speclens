@@ -75,7 +75,7 @@ export class EmbeddingIndexer {
         operationId: op.operationId,
         method: op.method,
         path: op.path,
-        specificationId: op.specificationId,
+        specificationId: op.specId,
         summary: op.summary,
       },
     }));
@@ -116,7 +116,7 @@ export class EmbeddingIndexer {
           operationId: op.operationId,
           method: op.method,
           path: op.path,
-          specificationId: op.specificationId,
+          specificationId: op.specId,
           summary: op.summary,
         },
       }));
