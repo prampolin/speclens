@@ -7,7 +7,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./providers": "./src/providers/index.ts"
+    "./llm": "./src/llm/index.ts",
+    "./retrieval": "./src/retrieval/index.ts",
+    "./orchestration": "./src/orchestration/index.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -19,8 +21,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/node": "^22.13.5",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.7"
+    "typescript": "^5.7.3"
   }
 }

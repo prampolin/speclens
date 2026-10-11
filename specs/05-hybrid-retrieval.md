@@ -38,7 +38,7 @@
 
 ## Decisões e riscos
 
-- Pendentes de execução.
+- Scaffold inicial de interfaces (`HybridQuery`, `RetrievalResult`, `FusionConfig`, `HybridRetrieval`, `StubHybridRetrieval`) criado em `@speclens/ai-core/retrieval` como preparação da Fase 05 pela Fase 07.
 
 ## Gate de saída
 
