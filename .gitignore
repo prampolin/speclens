@@ -1,0 +1,34 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+.pnpm-store/
+*.tsbuildinfo
+
+# SpecLens data and privacy
+data/
+models/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+# Environment
+.env*
+!.env.example
+
+# Test & coverage
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# OS and IDE
+.DS_Store
+*.pem
+.vscode/
+.idea/
+.antigravitycli/
