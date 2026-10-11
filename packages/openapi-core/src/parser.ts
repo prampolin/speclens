@@ -22,6 +22,7 @@ export function detectDialect(doc: Record<string, unknown>): OpenAPIDialect {
 }
 
 const DEFAULT_MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const DEFAULT_PARSE_TIMEOUT_MS = 30000; // 30s
 
 /**
  * Parses and validates an OpenAPI / Swagger document from string or Buffer (JSON or YAML).
@@ -30,7 +31,9 @@ export function parseOpenAPIDocument(
   content: string | Buffer,
   options: ParseOptions = {}
 ): ParsedDocument {
+  const startTime = Date.now();
   const maxSizeBytes = options.maxSizeBytes ?? DEFAULT_MAX_SIZE_BYTES;
+  const timeoutMs = options.parseTimeoutMs ?? DEFAULT_PARSE_TIMEOUT_MS;
   const filename = options.filename ?? 'document';
 
   const byteLength = Buffer.isBuffer(content)
@@ -84,6 +87,14 @@ export function parseOpenAPIDocument(
         { originalError: yamlErr.message }
       );
     }
+  }
+
+  if (Date.now() - startTime > timeoutMs) {
+    throw new OpenAPIParseError(
+      `OpenAPI parsing exceeded timeout limit of ${timeoutMs}ms`,
+      'PARSE_TIMEOUT',
+      { elapsedMs: Date.now() - startTime, limitMs: timeoutMs }
+    );
   }
 
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {

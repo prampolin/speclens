@@ -9,10 +9,12 @@ import {
   NormalizedServer,
   ParsedDocument,
   RefResolverOptions,
+  NormalizeOptions,
 } from './types.js';
 import { resolveRefs } from './ref-resolver.js';
 import { getOperationSourcePointer } from './source-mapper.js';
 import { NormalizedOperationSchema } from './schemas.js';
+import { OpenAPIParseError } from './parser.js';
 
 const VALID_HTTP_METHODS: Set<HttpMethod> = new Set([
   'get',
@@ -121,8 +123,10 @@ export function toIndexText(op: NormalizedOperation): string {
 export function normalizeDocument(
   parsedDoc: ParsedDocument,
   specId: string,
-  options: RefResolverOptions = {}
+  options: NormalizeOptions = {}
 ): NormalizedOperation[] {
+  const maxOperations = options.maxOperations ?? 5000;
+
   // 1. Resolve references safely
   const resolvedRaw = resolveRefs<Record<string, unknown>>(parsedDoc.raw, options);
 
@@ -387,6 +391,14 @@ export function normalizeDocument(
 
       // Validate through Zod to guarantee strict conformance
       NormalizedOperationSchema.parse(normalizedOp);
+
+      if (operations.length >= maxOperations) {
+        throw new OpenAPIParseError(
+          `Document exceeds maximum operation limit of ${maxOperations} operations`,
+          'MAX_OPERATIONS_EXCEEDED',
+          { maxOperations, specId }
+        );
+      }
 
       operations.push(normalizedOp);
     }

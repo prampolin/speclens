@@ -1,0 +1,19 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '127.0.0.1:3000:3000' # apenas loopback, nunca 0.0.0.0 (fail-closed / PM-001)
+    volumes:
+      - ./data:/app/data # SQLite e índices vetoriais persistentes
+      - ./models:/app/models # pesos e caches de modelos locais
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/speclens.db
+      - MODELS_PATH=/app/models
+      - PRIVATE_MODE=true
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    restart: unless-stopped
+    network_mode: bridge
+    # Sem dependência de serviços cloud ou proxies externos

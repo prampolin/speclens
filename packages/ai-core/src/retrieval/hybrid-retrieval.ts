@@ -117,11 +117,10 @@ export class HybridRetrievalImpl implements HybridRetrieval {
     } else {
       // Find namespaces for this workspace
       const stmt = this.db.prepare(
-        'SELECT id, specification_id FROM specifications WHERE workspace_id = ?'
+        'SELECT id FROM specifications WHERE workspace_id = ?'
       );
       const specs = stmt.all(validated.workspaceId) as Array<{
         id: string;
-        specification_id: string;
       }>;
       const dims = await this.embeddingProvider.dimensions();
 

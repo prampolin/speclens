@@ -3,6 +3,7 @@ import type { NextConfig } from 'next';
 process.env.NEXT_TELEMETRY_DISABLED = '1';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   transpilePackages: [
     '@speclens/ai-core',
     '@speclens/openapi-core',

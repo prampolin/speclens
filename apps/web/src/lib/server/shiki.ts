@@ -1,4 +1,4 @@
-import { codeToHtml } from 'shiki';
+let codeToHtmlFn: ((code: string, options: any) => Promise<string>) | null = null;
 
 export async function highlightSnippet(
   code: string,
@@ -14,7 +14,11 @@ export async function highlightSnippet(
   const resolvedLang = languageMap[lang.toLowerCase()] ?? 'text';
 
   try {
-    return await codeToHtml(code, {
+    if (!codeToHtmlFn) {
+      const mod = await import('shiki');
+      codeToHtmlFn = mod.codeToHtml;
+    }
+    return await codeToHtmlFn(code, {
       lang: resolvedLang,
       theme: 'github-dark-default',
     });
