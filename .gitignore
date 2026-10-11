@@ -6,6 +6,7 @@ dist/
 .turbo/
 .pnpm-store/
 *.tsbuildinfo
+*.log
 
 # SpecLens data and privacy
 data/

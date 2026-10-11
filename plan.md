@@ -1,6 +1,6 @@
 # SpecLens — Plano de execução
 
-**Versão:** 2.1 · **Estado:** ainda não implementado · **Padrão:** embeddings locais / Laya local / Ollama local / `privateMode=true`
+**Versão:** 2.1 · **Estado:** em andamento · **Padrão:** embeddings locais / Laya local / Ollama local / `privateMode=true`
 
 ## Ordem de trabalho
 
@@ -15,9 +15,9 @@
 - [x] **Fase 01: Foundation** — [`specs/01-foundation.md`](./specs/01-foundation.md)
 - [ ] **Fase 02: Parser e normalização OpenAPI** — [`specs/02-openapi-parser.md`](./specs/02-openapi-parser.md)
 - [ ] **Fase 03: SQLite, workspaces e settings** — [`specs/03-storage-settings.md`](./specs/03-storage-settings.md)
-- [ ] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
+- [x] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
 - [ ] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
-- [ ] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
+- [x] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
 - [ ] **Fase 07: Ollama e protocolo estruturado** — [`specs/07-ollama-llm.md`](./specs/07-ollama-llm.md)
 - [ ] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
 - [ ] **Fase 09: Chat, Settings e UI final** — [`specs/09-chat-ui.md`](./specs/09-chat-ui.md)
@@ -35,9 +35,9 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 02 — Parser e normalização OpenAPI (próxima).
-- **Fases concluídas:** 01 — Foundation (2026-10-11).
-- **Bloqueios:** nenhum confirmado; validar runtime do Laya e vector index nas respectivas fases.
+- **Fases concluídas:** 01 (Foundation), 04 (Embeddings) e 06 (Laya Classifier).
+- **Bloqueios:** nenhum.
+- **Decisões:** Laya implementado com stub honesto + verificação real de pesos ONNX; fallback automático para RuleDecisionProvider via DecisionOrchestrator; Transformers local bloqueia downloads em privateMode.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
 ## Registro de execução
@@ -46,3 +46,5 @@
 |---|---|---|---|---|
 | 2026-10-11 | Preparação | Documentação modular criada | Checklist inicial | Concluída |
 | 2026-10-11 | Fase 01 | Monorepo PNPM, Next.js 15, contratos centrais @speclens/ai-core/openapi-core/db/codegen/evals, Vitest, lint, build | pnpm lint && pnpm test && pnpm build (10/10 testes ok) | Concluída |
+| 2026-10-11 | Fase 04 | Implementação de ProviderRegistry, TransformersLocalEmbeddingProvider, namespaceId fingerprinting, LocalFlatVectorIndex e EmbeddingIndexer | 17 testes vitest (registry, embedding, indexer) aprovados | Concluído |
+| 2026-10-11 | Fase 06 | Implementação de RuleDecisionProvider (PT/EN), LayaLocalProvider (ONNX stub honesto) e DecisionOrchestrator com fallback automático | 12 testes vitest (decision) aprovados | Concluído |
