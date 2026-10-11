@@ -1,14 +1,27 @@
 import { z } from 'zod';
 
-export const HttpMethodSchema = z.enum([
-  'get',
-  'post',
-  'put',
-  'delete',
-  'patch',
-  'options',
-  'head',
-  'trace',
+export const HttpMethodSchema = z.union([
+  z.enum([
+    'get',
+    'post',
+    'put',
+    'delete',
+    'patch',
+    'options',
+    'head',
+    'trace',
+  ]),
+  z.enum([
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+    'OPTIONS',
+    'HEAD',
+    'TRACE',
+  ]),
+  z.string(),
 ]);
 
 export const ParameterInSchema = z.enum(['path', 'query', 'header', 'cookie']);
@@ -23,10 +36,15 @@ export const OpenAPIDialectSchema = z.enum([
   'openapi_3_1',
 ]);
 
-export const NormalizedServerSchema = z.object({
+export const NormalizedServerObjectSchema = z.object({
   url: z.string(),
   description: z.string().optional(),
 });
+
+export const NormalizedServerSchema = z.union([
+  z.string(),
+  NormalizedServerObjectSchema,
+]);
 
 export const NormalizedExampleSchema = z.object({
   summary: z.string().optional(),
@@ -54,20 +72,39 @@ export const NormalizedMediaTypeSchema = z.object({
 export const NormalizedRequestBodySchema = z.object({
   description: z.string().optional(),
   required: z.boolean(),
-  content: z.record(NormalizedMediaTypeSchema),
+  content: z.record(NormalizedMediaTypeSchema).optional(),
+  mediaType: z.string().optional(),
+  schema: z.record(z.unknown()).optional(),
+  example: z.unknown().optional(),
 });
 
-export const NormalizedResponseSchema = z.object({
+export const NormalizedResponseObjectSchema = z.object({
+  statusCode: z.string().optional(),
   description: z.string(),
   headers: z.record(z.record(z.unknown())).optional(),
   content: z.record(NormalizedMediaTypeSchema).optional(),
+  mediaTypes: z.array(z.any()).optional(),
 });
 
-export const NormalizedSecurityRequirementSchema = z.record(z.array(z.string()));
+export const NormalizedResponseSchema = NormalizedResponseObjectSchema;
+
+export const NormalizedResponsesSchema = z.union([
+  z.record(NormalizedResponseObjectSchema),
+  z.array(NormalizedResponseObjectSchema),
+]);
+
+export const NormalizedSecurityRequirementSchema = z.union([
+  z.record(z.array(z.string())),
+  z.object({
+    schemeName: z.string(),
+    scopes: z.array(z.string()),
+  }),
+]);
 
 export const NormalizedOperationSchema = z.object({
   id: z.string(),
-  specId: z.string(),
+  specId: z.string().optional(),
+  specificationId: z.string().optional(),
   method: HttpMethodSchema,
   path: z.string(),
   operationId: z.string().optional(),
@@ -77,7 +114,8 @@ export const NormalizedOperationSchema = z.object({
   servers: z.array(NormalizedServerSchema),
   parameters: z.array(NormalizedParameterSchema),
   requestBody: NormalizedRequestBodySchema.optional(),
-  responses: z.record(NormalizedResponseSchema),
+  requestBodies: z.array(z.any()).optional(),
+  responses: NormalizedResponsesSchema,
   security: z.array(NormalizedSecurityRequirementSchema).optional(),
   deprecated: z.boolean().optional(),
   sourcePointer: z.string(),
@@ -119,6 +157,6 @@ export const httpMethodSchema = HttpMethodSchema;
 export const parameterLocationSchema = ParameterInSchema;
 export const normalizedParameterSchema = NormalizedParameterSchema;
 export const normalizedRequestBodySchema = NormalizedRequestBodySchema;
-export const normalizedResponseSchema = NormalizedResponseSchema;
+export const normalizedResponseSchema = NormalizedResponseObjectSchema;
 export const normalizedSecurityRequirementSchema = NormalizedSecurityRequirementSchema;
 export const normalizedOperationSchema = NormalizedOperationSchema;
