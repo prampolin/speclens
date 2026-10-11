@@ -14,7 +14,7 @@
 
 - [x] **Fase 01: Foundation** — [`specs/01-foundation.md`](./specs/01-foundation.md)
 - [ ] **Fase 02: Parser e normalização OpenAPI** — [`specs/02-openapi-parser.md`](./specs/02-openapi-parser.md)
-- [ ] **Fase 03: SQLite, workspaces e settings** — [`specs/03-storage-settings.md`](./specs/03-storage-settings.md)
+- [x] **Fase 03: SQLite, workspaces e settings** — [`specs/03-storage-settings.md`](./specs/03-storage-settings.md)
 - [ ] **Fase 04: Embeddings intercambiáveis** — [`specs/04-embeddings.md`](./specs/04-embeddings.md)
 - [ ] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
 - [ ] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
@@ -35,8 +35,8 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 02 — Parser e normalização OpenAPI (próxima).
-- **Fases concluídas:** 01 — Foundation (2026-10-11).
+- **Fase atual:** 03 — SQLite, workspaces e settings (concluída no branch feat/03-storage-settings).
+- **Fases concluídas:** 01 — Foundation (2026-10-11), 03 — Storage & Settings (2026-10-11).
 - **Bloqueios:** nenhum confirmado; validar runtime do Laya e vector index nas respectivas fases.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -46,3 +46,4 @@
 |---|---|---|---|---|
 | 2026-10-11 | Preparação | Documentação modular criada | Checklist inicial | Concluída |
 | 2026-10-11 | Fase 01 | Monorepo PNPM, Next.js 15, contratos centrais @speclens/ai-core/openapi-core/db/codegen/evals, Vitest, lint, build | pnpm lint && pnpm test && pnpm build (10/10 testes ok) | Concluída |
+| 2026-10-11 | Fase 03 | SQLite better-sqlite3, migrations versionadas, FTS5 triggers, repositories, Zod validation, isolamento | pnpm test && pnpm lint (29/29 testes ok) | Concluída |
