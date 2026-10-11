@@ -16,6 +16,29 @@ SpecLens transforms OpenAPI specifications (3.0, 3.1, and Swagger 2.0) into an i
 
 ---
 
+## Interface Overview (Mockup)
+
+```
+┌─────────────────┬────────────────────────────────────────────┬────────────────────────┐
+│ Workspaces      │ Chat & Grounded Answers                    │ RAG Inspector          │
+├─────────────────┼────────────────────────────────────────────┼────────────────────────┤
+│ > Default (v1.0)│ User: "How to register an item?"           │ Retrieved Candidates:  │
+│                 │                                            │ 1. POST /v1/items      │
+│ Specs:          │ Assistant:                                 │    Score: 0.94 (RRF)   │
+│ • store-api.yaml│ To create an item, use the POST /v1/items  │    Method: POST        │
+│                 │ route with required authorization.         │    Source: #/paths/    │
+│ Endpoints (14): │                                            │            ~1items/post│
+│ • GET  /health  │ ```bash                                    │                        │
+│ • POST /v1/items│ curl -X POST http://127.0.0.1:8000/v1/items│ Operation Schema:      │
+│ • GET  /v1/items│   -H "Authorization: Bearer <AUTH_TOKEN>"  │ {                      │
+│                 │ ```                                        │   "summary": "Create", │
+│ [Settings]      │                                            │   "tags": ["items"]    │
+│ [Private Mode:ON│ [Inspect Source] [Copy cURL] [Copy Python] │ }                      │
+└─────────────────┴────────────────────────────────────────────┴────────────────────────┘
+```
+
+---
+
 ## System Requirements
 
 - **Operating System**: macOS (Apple Silicon recommended) or Linux (x86_64 / arm64)
