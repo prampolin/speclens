@@ -1,63 +1,63 @@
 {
-  "timestamp": "2026-10-11T15:21:48.049Z",
+  "timestamp": "2026-10-11T15:49:22.091Z",
   "hardware": {
     "arch": "arm64",
     "platform": "darwin",
     "totalMemMb": 16384,
-    "freeMemMb": 130,
+    "freeMemMb": 216,
     "cpuModel": "Apple M4",
     "cpuCores": 10,
     "nodeVersion": "v24.14.0"
   },
   "metrics": {
     "openApiParse": {
-      "p50Ms": 15.862,
-      "p95Ms": 37.201,
-      "meanMs": 18.854,
-      "minMs": 12.318,
-      "maxMs": 37.201,
+      "p50Ms": 33.264,
+      "p95Ms": 89.757,
+      "meanMs": 39.156,
+      "minMs": 15.023,
+      "maxMs": 89.757,
       "samples": 10
     },
     "normalization": {
-      "p50Ms": 1.877,
-      "p95Ms": 3.492,
-      "meanMs": 1.966,
-      "minMs": 1.231,
-      "maxMs": 3.492,
+      "p50Ms": 2.631,
+      "p95Ms": 4.131,
+      "meanMs": 2.651,
+      "minMs": 1.297,
+      "maxMs": 4.131,
       "samples": 10
     },
     "intentClassification": {
-      "p50Ms": 0.009,
-      "p95Ms": 1.877,
-      "meanMs": 0.371,
+      "p50Ms": 0.011,
+      "p95Ms": 1.924,
+      "meanMs": 0.445,
       "minMs": 0.002,
-      "maxMs": 1.877,
+      "maxMs": 1.924,
       "samples": 10
     },
     "indexing50Operations": {
-      "p50Ms": 3.023,
-      "p95Ms": 5.547,
-      "meanMs": 3.263,
-      "minMs": 2.225,
-      "maxMs": 5.547,
+      "p50Ms": 4.05,
+      "p95Ms": 7.805,
+      "meanMs": 5.055,
+      "minMs": 3.707,
+      "maxMs": 7.805,
       "samples": 5
     },
     "hybridSearch": {
-      "p50Ms": 0.691,
-      "p95Ms": 2.455,
-      "meanMs": 0.806,
-      "minMs": 0.455,
-      "maxMs": 2.455,
+      "p50Ms": 0.436,
+      "p95Ms": 2.529,
+      "meanMs": 0.661,
+      "minMs": 0.39,
+      "maxMs": 2.529,
       "samples": 10
     }
   },
   "memory": {
     "indexing50Operations": {
-      "rssBeforeMb": 123.41,
-      "rssAfterMb": 127.23,
-      "heapUsedBeforeMb": 36.47,
-      "heapUsedAfterMb": 27.48,
-      "deltaHeapMb": -8.99
+      "rssBeforeMb": 123.11,
+      "rssAfterMb": 126.91,
+      "heapUsedBeforeMb": 36,
+      "heapUsedAfterMb": 27.15,
+      "deltaHeapMb": -8.85
     }
   }
 }
