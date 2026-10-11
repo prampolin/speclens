@@ -18,8 +18,14 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@speclens/ai-core": ["../../packages/ai-core/src/index.ts"],
+      "@speclens/openapi-core": ["../../packages/openapi-core/src/index.ts"],
+      "@speclens/db": ["../../packages/db/src/index.ts"],
+      "@speclens/codegen": ["../../packages/codegen/src/index.ts"],
+      "@speclens/evals": ["../../packages/evals/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

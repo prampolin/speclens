@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
     '@speclens/codegen',
     '@speclens/evals',
   ],
+  serverExternalPackages: ['better-sqlite3', 'shiki'],
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    return config;
+  },
   images: {
     // Strictly block external image domains for privacy
     remotePatterns: [],

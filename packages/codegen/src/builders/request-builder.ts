@@ -133,7 +133,7 @@ export function buildRequestModel(
 
   if (groundedOrOptions) {
     if ('groundedValues' in groundedOrOptions) {
-      groundedValues = groundedOrOptions.groundedValues;
+      groundedValues = (groundedOrOptions as { groundedValues?: Record<string, unknown> }).groundedValues;
     } else {
       groundedValues = groundedOrOptions as Record<string, unknown>;
     }
