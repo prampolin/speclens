@@ -35,6 +35,12 @@ describe('EmbeddingIndexer & Reindexing Pipeline', () => {
       summary: 'List users',
       description: 'Returns list of active system users',
       tags: ['Users', 'Admin'],
+      servers: [],
+      parameters: [],
+      requestBodies: [],
+      responses: [],
+      security: [],
+      sourcePointer: '#/paths/~1api~1v1~1users/get',
     },
     {
       id: 'op-post-users',
@@ -45,6 +51,12 @@ describe('EmbeddingIndexer & Reindexing Pipeline', () => {
       summary: 'Create user',
       description: 'Registers a new user account',
       tags: ['Users'],
+      servers: [],
+      parameters: [],
+      requestBodies: [],
+      responses: [],
+      security: [],
+      sourcePointer: '#/paths/~1api~1v1~1users/post',
     },
   ];
 
