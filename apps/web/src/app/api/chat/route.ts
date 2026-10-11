@@ -286,19 +286,21 @@ export async function POST(request: NextRequest) {
                   snippetsWithHtml: generatedSnippets,
                 });
               } else if (event.type === 'error') {
-                // If LLM returned error (e.g. Ollama offline), send error event
-                sendEvent(event as Record<string, unknown>);
+                // If LLM returned error (e.g. Ollama offline), log status notice without marking UI as hard-broken
+                sendEvent({
+                  type: 'status',
+                  stage: 'explaining',
+                  message: `Aviso IA: ${event.message}. Fundamentando resposta diretamente no contrato OpenAPI.`,
+                });
               } else if (event.type === 'status') {
                 sendEvent(event as Record<string, unknown>);
               }
             }
           } catch (llmErr: any) {
             sendEvent({
-              type: 'error',
-              code: 'LLM_STREAM_ERROR',
-              message: llmErr instanceof Error ? llmErr.message : String(llmErr),
-              recoverable: true,
-              retryable: true,
+              type: 'status',
+              stage: 'explaining',
+              message: `Ollama offline. Fundamentando resposta diretamente no contrato OpenAPI local.`,
             });
           }
 

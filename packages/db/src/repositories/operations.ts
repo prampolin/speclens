@@ -43,24 +43,39 @@ function mapRowToEntity(row: RawOperationRow): OperationEntity {
   };
 }
 
+const STOP_WORDS = new Set([
+  'como', 'eu', 'faco', 'faço', 'para', 'de', 'do', 'da', 'dos', 'das',
+  'o', 'a', 'os', 'as', 'por', 'em', 'no', 'na', 'nos', 'nas',
+  'um', 'uma', 'uns', 'umas', 'que', 'qual', 'quais', 'se',
+  'how', 'do', 'i', 'for', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'can', 'what', 'which',
+]);
+
 /**
  * Sanitizes input text into a safe FTS5 query.
- * Quotes terms and adds prefix matching so partial words match.
+ * Filters common natural language stop words and creates prefix matching tokens.
  */
 export function sanitizeFtsQuery(query: string): string {
   // Extract alphanumeric sequences and tokens
-  const tokens = query
+  const rawTokens = query
     .replace(/[^\p{L}\p{N}_]+/gu, ' ')
     .trim()
     .split(/\s+/)
     .filter((t) => t.length > 0);
 
-  if (tokens.length === 0) {
+  if (rawTokens.length === 0) {
     return '';
   }
 
+  // Filter conversational stop words
+  const contentTokens = rawTokens.filter(
+    (t) => !STOP_WORDS.has(t.toLowerCase()) && t.length > 1
+  );
+
+  const tokens = contentTokens.length > 0 ? contentTokens : rawTokens;
+
   // Format tokens with prefix wildcard: "token"*
-  return tokens.map((token) => `"${token}"*`).join(' AND ');
+  // If multiple terms, combine with OR to allow rank-ordered BM25 matching across descriptions & paths
+  return tokens.map((token) => `"${token}"*`).join(' OR ');
 }
 
 export class OperationRepository {
