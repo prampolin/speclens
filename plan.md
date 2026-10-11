@@ -19,8 +19,8 @@
 - [x] **Fase 05: Busca híbrida e RAG Inspector** — [`specs/05-hybrid-retrieval.md`](./specs/05-hybrid-retrieval.md)
 - [x] **Fase 06: Laya + classificador configurável** — [`specs/06-laya-classifier.md`](./specs/06-laya-classifier.md)
 - [x] **Fase 07: Ollama e protocolo estruturado** — [`specs/07-ollama-llm.md`](./specs/07-ollama-llm.md)
-- [ ] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
-- [ ] **Fase 09: Chat, Settings e UI final** — [`specs/09-chat-ui.md`](./specs/09-chat-ui.md)
+- [x] **Fase 08: Codegen determinístico** — [`specs/08-codegen.md`](./specs/08-codegen.md)
+- [x] **Fase 09: Chat, Settings e UI final** — [`specs/09-chat-ui.md`](./specs/09-chat-ui.md)
 - [ ] **Fase 10: Privacidade, segurança e benchmarks** — [`specs/10-security-evals.md`](./specs/10-security-evals.md)
 - [ ] **Fase 11: Packaging e release local** — [`specs/11-release.md`](./specs/11-release.md)
 
@@ -35,8 +35,8 @@
 
 ## Estado e decisões
 
-- **Fase atual:** 09 (UI / Chat).
-- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08 — todas em 2026-10-11.
+- **Fase atual:** 10 (Privacidade, segurança e benchmarks).
+- **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08, 09 — todas em 2026-10-11.
 - **Bloqueios:** nenhum.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
 
@@ -53,3 +53,4 @@
 | 2026-10-11 | Fase 06 | RuleDecisionProvider multilíngue PT/EN, LayaLocalProvider stub honesto, DecisionOrchestrator com fallback automático | pnpm test (29/29 testes ok) | Concluída |
 | 2026-10-11 | Fase 07 | OllamaLLMProvider, policy guard loopback, prompt injection safety, streaming NDJSON Zod, scaffold Fase 05 | pnpm test (20/20 testes ok) | Concluída |
 | 2026-10-11 | Fase 08 | Codegen determinístico cURL, fetch, Python, RequestModel canônico, placeholders rotulados, validação schema | pnpm --filter @speclens/codegen test (17/17 testes ok), pnpm test (121/121 testes ok) | Concluída |
+| 2026-10-11 | Fase 09 | Chat UI SSE streaming, Shiki snippets cURL/fetch/Python, Settings por workspace, RAG Inspector com ranking e JSON Pointer, bloqueio no reindex, acessibilidade | vitest run apps/web (11/11 testes ok), next build (5/5 páginas ok), vitest run (132/132 testes ok) | Concluída |
