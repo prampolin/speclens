@@ -1,0 +1,17 @@
+openapi: "3.0.0"
+info:
+  title: "Duplicate Paths API"
+  version: "1.0.0"
+paths:
+  /users:
+    get:
+      operationId: "getUsers"
+      responses:
+        "200":
+          description: "List users"
+  /Users:
+    get:
+      operationId: "getUsersDuplicateCase"
+      responses:
+        "200":
+          description: "Duplicate case path"

@@ -1,59 +1,77 @@
-export type OpenAPIDialect = 'swagger_2' | 'openapi_3_0' | 'openapi_3_1';
+export type HttpMethod =
+  | 'get'
+  | 'post'
+  | 'put'
+  | 'delete'
+  | 'patch'
+  | 'options'
+  | 'head'
+  | 'trace';
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD' | 'TRACE';
+export type ParameterIn = 'path' | 'query' | 'header' | 'cookie';
+export type ParameterLocation = ParameterIn;
 
-export type ParameterLocation = 'path' | 'query' | 'header' | 'cookie';
+export type OpenAPIDialect = 'openapi-3.0' | 'openapi-3.1' | 'swagger-2.0' | 'unknown' | 'swagger_2' | 'openapi_3_0' | 'openapi_3_1';
+
+export interface NormalizedServer {
+  url: string;
+  description?: string;
+}
+
+export interface NormalizedExample {
+  summary?: string;
+  description?: string;
+  value?: unknown;
+}
 
 export interface NormalizedParameter {
   name: string;
-  in: ParameterLocation;
-  description?: string;
+  in: ParameterIn;
   required: boolean;
+  description?: string;
   deprecated?: boolean;
   schema?: Record<string, unknown>;
   example?: unknown;
+  examples?: Record<string, NormalizedExample>;
+}
+
+export interface NormalizedMediaType {
+  schema?: Record<string, unknown>;
+  example?: unknown;
+  examples?: Record<string, NormalizedExample>;
 }
 
 export interface NormalizedRequestBody {
   description?: string;
   required: boolean;
-  mediaType: string;
-  schema?: Record<string, unknown>;
-  example?: unknown;
-}
-
-export interface NormalizedResponseMediaType {
-  mediaType: string;
-  schema?: Record<string, unknown>;
-  example?: unknown;
+  content: Record<string, NormalizedMediaType>;
 }
 
 export interface NormalizedResponse {
-  statusCode: string;
   description: string;
-  mediaTypes?: NormalizedResponseMediaType[];
+  headers?: Record<string, Record<string, unknown>>;
+  content?: Record<string, NormalizedMediaType>;
 }
 
-export interface NormalizedSecurityRequirement {
-  schemeName: string;
-  scopes: string[];
-}
+export type NormalizedSecurityRequirement = Record<string, string[]>;
 
 export interface NormalizedOperation {
-  id: string;
-  specificationId: string;
-  method: HttpMethod | string;
+  id: string; // {specId}:{method}:{path}
+  specId: string;
+  method: HttpMethod;
   path: string;
   operationId?: string;
   summary?: string;
   description?: string;
   tags: string[];
-  servers: string[];
+  servers: NormalizedServer[];
   parameters: NormalizedParameter[];
-  requestBodies: NormalizedRequestBody[];
-  responses: NormalizedResponse[];
-  security: NormalizedSecurityRequirement[];
+  requestBody?: NormalizedRequestBody;
+  responses: Record<string, NormalizedResponse>;
+  security?: NormalizedSecurityRequirement[];
+  deprecated?: boolean;
   sourcePointer: string;
+  indexText?: string;
 }
 
 export interface SpecificationSummary {
@@ -66,4 +84,29 @@ export interface SpecificationSummary {
   operationCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OpenAPIDocumentInfo {
+  title: string;
+  version: string;
+  description?: string;
+}
+
+export interface ParsedDocument {
+  dialect: OpenAPIDialect;
+  info: OpenAPIDocumentInfo;
+  servers: NormalizedServer[];
+  raw: Record<string, unknown>;
+  warnings: string[];
+}
+
+export interface ParseOptions {
+  maxSizeBytes?: number;
+  filename?: string;
+}
+
+export interface RefResolverOptions {
+  privateMode?: boolean;
+  maxDepth?: number;
+  onWarning?: (warning: string) => void;
 }

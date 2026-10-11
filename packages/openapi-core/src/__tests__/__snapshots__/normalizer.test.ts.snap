@@ -1,0 +1,134 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`normalizeDocument > normalizes OpenAPI 3.0 document with expected operation counts and fields 1`] = `
+{
+  "deprecated": false,
+  "description": "Returns a list of pets with optional filtering",
+  "id": "spec-petstore-3:get:/pets",
+  "indexText": "GET /pets
+id: listPets
+summary: List all pets
+description: Returns a list of pets with optional filtering
+tags: pets
+parameters: limit (query, optional - How many items to return); status (query, optional - Status filter)
+responses: 200 A paged array of pets, 500 Unexpected error",
+  "method": "get",
+  "operationId": "listPets",
+  "parameters": [
+    {
+      "deprecated": false,
+      "description": "How many items to return",
+      "example": undefined,
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 20,
+        "format": "int32",
+        "type": "integer",
+      },
+    },
+    {
+      "deprecated": false,
+      "description": "Status filter",
+      "example": undefined,
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+        "enum": [
+          "available",
+          "pending",
+          "sold",
+        ],
+        "type": "string",
+      },
+    },
+  ],
+  "path": "/pets",
+  "requestBody": undefined,
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": undefined,
+          "schema": {
+            "items": {
+              "allOf": [
+                {
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                    },
+                    "tag": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "name",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "id": {
+                      "format": "int64",
+                      "type": "integer",
+                    },
+                    "status": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "id",
+                  ],
+                  "type": "object",
+                },
+              ],
+            },
+            "type": "array",
+          },
+        },
+      },
+      "description": "A paged array of pets",
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": undefined,
+          "schema": {
+            "properties": {
+              "code": {
+                "format": "int32",
+                "type": "integer",
+              },
+              "message": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "code",
+              "message",
+            ],
+            "type": "object",
+          },
+        },
+      },
+      "description": "Unexpected error",
+    },
+  },
+  "security": undefined,
+  "servers": [
+    {
+      "description": "Production server",
+      "url": "https://api.petstore.example.com/v1",
+    },
+  ],
+  "sourcePointer": "#/paths/~1pets/get",
+  "specId": "spec-petstore-3",
+  "summary": "List all pets",
+  "tags": [
+    "pets",
+  ],
+}
+`;

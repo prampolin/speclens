@@ -1,0 +1,64 @@
+swagger: "2.0"
+info:
+  title: "Petstore Swagger 2.0"
+  version: "1.0.0"
+  description: "Sample Swagger 2.0 specification"
+host: "petstore.swagger.io"
+basePath: "/v2"
+schemes:
+  - "https"
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+paths:
+  /pets:
+    get:
+      summary: "List all pets"
+      operationId: "listPets"
+      tags:
+        - "pets"
+      parameters:
+        - name: "limit"
+          in: "query"
+          required: false
+          type: "integer"
+          format: "int32"
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Pet"
+    post:
+      summary: "Add a new pet"
+      operationId: "addPet"
+      tags:
+        - "pets"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/Pet"
+      responses:
+        "200":
+          description: "Pet created"
+          schema:
+            $ref: "#/definitions/Pet"
+
+definitions:
+  Pet:
+    type: "object"
+    required:
+      - "name"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+      name:
+        type: "string"
+      status:
+        type: "string"

@@ -1,0 +1,15 @@
+openapi: "3.0.0"
+info:
+  title: "Remote Ref API"
+  version: "1.0.0"
+paths:
+  /external:
+    get:
+      summary: "Get external data"
+      responses:
+        "200":
+          description: "Response from remote schema"
+          content:
+            application/json:
+              schema:
+                $ref: "https://example.com/schemas/remote-model.json"
