@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@speclens/ai-core": ["packages/ai-core/src/index.ts"],
+      "@speclens/openapi-core": ["packages/openapi-core/src/index.ts"],
+      "@speclens/db": ["packages/db/src/index.ts"],
+      "@speclens/codegen": ["packages/codegen/src/index.ts"],
+      "@speclens/evals": ["packages/evals/src/index.ts"],
+      "@/*": ["apps/web/src/*"]
+    }
+  },
+  "include": ["apps/**/*", "packages/**/*", "tests/**/*", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", ".next"]
+}
