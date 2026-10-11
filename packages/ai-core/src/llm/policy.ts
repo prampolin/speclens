@@ -1,11 +1,7 @@
 import type { OllamaModelInfo } from './types.js';
 
-export class PrivacyViolationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'PrivacyViolationError';
-  }
-}
+import { PrivacyViolationError } from '../providers/errors.js';
+export { PrivacyViolationError };
 
 const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 

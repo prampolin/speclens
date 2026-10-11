@@ -26,3 +26,5 @@ export interface EvalReport {
   meanDurationMs: number;
   results: EvalResult[];
 }
+
+export * from './retrieval-eval.js';

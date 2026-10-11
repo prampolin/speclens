@@ -4,7 +4,6 @@ export * from './providers/index.js';
 
 export {
   OllamaLLMProvider,
-  PrivacyViolationError,
   validateOllamaUrl,
   isCloudBackedModel,
   validateModelNotCloud,
@@ -14,8 +13,16 @@ export {
 } from './llm/index.js';
 
 export {
+  HybridRetrievalImpl,
   StubHybridRetrieval,
   NotImplementedError,
+  hydrateOperations,
+  indexOperations,
+  type IndexingProgress,
+  type IndexingProgressCallback,
+  type IndexOperationsOptions,
+  type IndexOperationsResult,
+  type HybridRetrievalConfig,
   type HybridQuery,
   type HybridQueryFilters,
   type RetrievalResult,

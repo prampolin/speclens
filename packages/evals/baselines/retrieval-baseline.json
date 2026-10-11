@@ -1,0 +1,104 @@
+{
+  "metrics": {
+    "recallAt1": 1,
+    "recallAt3": 1,
+    "recallAt5": 1,
+    "mrr": 1,
+    "top1Accuracy": 1,
+    "totalQuestions": 10,
+    "durationMs": 29
+  },
+  "results": [
+    {
+      "questionId": "q01-en-list-pets",
+      "query": "How can I list all available pets in the store?",
+      "expectedOperationId": "listPets",
+      "retrievedOperationId": "listPets",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q02-pt-list-pets",
+      "query": "Quais endpoints me permitem listar todos os animais cadastrados?",
+      "expectedOperationId": "listPets",
+      "retrievedOperationId": "listPets",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q03-en-create-pet",
+      "query": "What endpoint adds or creates a new pet?",
+      "expectedOperationId": "createPet",
+      "retrievedOperationId": "createPet",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q04-pt-create-pet",
+      "query": "Como cadastrar um novo pet no sistema?",
+      "expectedOperationId": "createPet",
+      "retrievedOperationId": "createPet",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q05-en-get-pet-by-id",
+      "query": "Fetch pet details and info using petId",
+      "expectedOperationId": "showPetById",
+      "retrievedOperationId": "showPetById",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q06-pt-get-pet-by-id",
+      "query": "Buscar informações de um pet específico pelo identificador",
+      "expectedOperationId": "showPetById",
+      "retrievedOperationId": "showPetById",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q07-en-delete-pet",
+      "query": "Delete or remove a pet from the database",
+      "expectedOperationId": "deletePet",
+      "retrievedOperationId": "deletePet",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q08-pt-delete-pet",
+      "query": "Excluir ou remover um animal pelo id",
+      "expectedOperationId": "deletePet",
+      "retrievedOperationId": "deletePet",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q09-exact-opid",
+      "query": "showPetById",
+      "expectedOperationId": "showPetById",
+      "retrievedOperationId": "showPetById",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    },
+    {
+      "questionId": "q10-filter-query",
+      "query": "Filter pets by status available, pending or sold",
+      "expectedOperationId": "listPets",
+      "retrievedOperationId": "listPets",
+      "retrievedRank": 1,
+      "recallAt5": true,
+      "rr": 1
+    }
+  ],
+  "timestamp": "2026-10-11T13:33:34.419Z"
+}
