@@ -5,6 +5,9 @@ import {
   RuleDecisionProvider,
   DecisionOrchestrator,
   OllamaLLMProvider,
+  validateOllamaUrl,
+  isCloudBackedModel,
+  PrivacyViolationError,
   type EmbeddingProvider,
   type DecisionProvider,
   type LLMProvider,
@@ -16,6 +19,18 @@ import {
 } from '@speclens/ai-core';
 import { resolve } from 'node:path';
 import { getDatabase } from './db';
+import {
+  SettingsRepository,
+  createDefaultWorkspaceSettings,
+  workspaceSettingsSchema,
+  type WorkspaceSettings,
+} from '@speclens/db';
+
+const DEFAULT_OLLAMA_MODEL_ID = 'llama3.2:3b';
+
+function isCloudBackedModelId(modelId: string): boolean {
+  return isCloudBackedModel({ name: modelId });
+}
 
 let vectorIndexInstance: VectorIndex = new LocalFlatVectorIndex();
 
@@ -48,12 +63,40 @@ let decisionProviderInstance: DecisionProvider = {
   },
 };
 
-let llmProviderInstance: LLMProvider = new OllamaLLMProvider({
-  baseUrl: process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434',
-  modelId: process.env.OLLAMA_MODEL_ID ?? 'llama3.2:latest',
-  privateMode: true,
-  timeoutMs: 30000,
-});
+const defaultOllamaBaseUrl = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434';
+
+export function resolveWorkspaceSettings(workspaceId: string): WorkspaceSettings {
+  const repository = new SettingsRepository(getDatabase());
+  const workspace = getDatabase().prepare('SELECT id FROM workspaces WHERE id = ?').get(workspaceId);
+  if (!workspace) throw new Error(`Workspace not found: ${workspaceId}`);
+  const saved = repository.get(workspaceId);
+  if (saved) return workspaceSettingsSchema.parse(saved);
+
+  const defaults = workspaceSettingsSchema.parse(createDefaultWorkspaceSettings(workspaceId));
+  const resolved = workspaceSettingsSchema.parse({
+    ...defaults,
+    llm: { ...defaults.llm, modelId: process.env.OLLAMA_MODEL_ID ?? DEFAULT_OLLAMA_MODEL_ID },
+  });
+  // Validate before persisting the bootstrap selection.
+  createWorkspaceLLMProvider(resolved);
+  return repository.save(workspaceId, resolved);
+}
+
+export function createWorkspaceLLMProvider(settings: WorkspaceSettings): LLMProvider {
+  if (settings.llm.providerId !== 'ollama-local') {
+    throw new Error(`Unsupported LLM provider: ${settings.llm.providerId}`);
+  }
+  validateOllamaUrl(defaultOllamaBaseUrl, settings.privateMode);
+  if (settings.privateMode && isCloudBackedModelId(settings.llm.modelId)) {
+    throw new PrivacyViolationError('Cloud-backed Ollama models are not allowed in Private Mode.');
+  }
+  return new OllamaLLMProvider({
+    baseUrl: defaultOllamaBaseUrl,
+    modelId: settings.llm.modelId,
+    privateMode: settings.privateMode,
+    timeoutMs: 30000,
+  });
+}
 
 export function getVectorIndex(): VectorIndex {
   return vectorIndexInstance;
@@ -80,11 +123,17 @@ export function setDecisionProvider(provider: DecisionProvider): void {
 }
 
 export function getLLMProvider(): LLMProvider {
-  return llmProviderInstance;
+  return createWorkspaceLLMProvider(resolveWorkspaceSettings('default'));
 }
 
 export function setLLMProvider(provider: LLMProvider): void {
-  llmProviderInstance = provider;
+  llmProviderOverride = provider;
+}
+
+let llmProviderOverride: LLMProvider | null = null;
+
+export function getWorkspaceLLMProvider(settings: WorkspaceSettings): LLMProvider {
+  return llmProviderOverride ?? createWorkspaceLLMProvider(settings);
 }
 
 export interface ProviderStatusInfo {
@@ -98,7 +147,7 @@ export interface ProviderStatusInfo {
   requiresNetwork: boolean;
 }
 
-export async function getProvidersReadiness(): Promise<{
+export async function getProvidersReadiness(workspaceId = 'default'): Promise<{
   db: { ready: boolean; reason?: string };
   providers: ProviderStatusInfo[];
 }> {
@@ -115,7 +164,7 @@ export async function getProvidersReadiness(): Promise<{
 
   const emb = getEmbeddingProvider();
   const dec = getDecisionProvider();
-  const llm = getLLMProvider();
+  const llm = getWorkspaceLLMProvider(resolveWorkspaceSettings(workspaceId));
 
   const [embReady, decReady, llmReady] = await Promise.all([
     emb.readiness().catch((e) => ({ ready: false, reason: e.message })),

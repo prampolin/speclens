@@ -31,7 +31,7 @@ export function validateOllamaUrl(
   try {
     parsed = new URL(url);
   } catch {
-    throw new PrivacyViolationError(`Invalid URL provided: "${url}"`);
+    throw new PrivacyViolationError('Invalid Ollama URL provided.');
   }
 
   if (privateMode) {
@@ -44,18 +44,25 @@ export function validateOllamaUrl(
       );
     }
 
-    const cleanInputUrl = url.replace(/\/+$/, '');
-    const cleanOrigin = parsed.origin.replace(/\/+$/, '');
-    const isAllowed = allowedUrls.some((allowed) => {
-      const cleanAllowed = allowed.replace(/\/+$/, '');
-      return cleanInputUrl === cleanAllowed || cleanOrigin === cleanAllowed;
-    });
+    if (parsed.username || parsed.password || parsed.search || parsed.hash || !/^\/*$/.test(parsed.pathname)) {
+      throw new PrivacyViolationError('[PrivateMode] Denied: Ollama URL must be an origin without credentials, path, query or fragment.');
+    }
+    const isAllowed = allowedUrls.some((allowed) => url.replace(/\/+$/, '') === allowed.replace(/\/+$/, ''));
 
     if (!isAllowed) {
       throw new PrivacyViolationError(
-        `[PrivateMode] Denied: URL "${url}" is not in the explicit allowlist (${allowedUrls.join(', ')}).`,
+        '[PrivateMode] Denied: Ollama URL is not in the explicit allowlist.',
       );
     }
+  }
+}
+
+/** Rejects HTTP redirects so a loopback allowlisted request cannot be forwarded elsewhere. */
+export function rejectOllamaRedirect(response: Response): void {
+  if (response.status >= 300 && response.status < 400) {
+    throw new PrivacyViolationError(
+      `[PrivateMode] Denied: Ollama returned HTTP redirect ${response.status}; redirect targets are not followed.`,
+    );
   }
 }
 

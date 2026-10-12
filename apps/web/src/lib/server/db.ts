@@ -8,8 +8,11 @@ import {
   IngestionJobRepository,
   VectorNamespaceRepository,
 } from '@speclens/db';
+import { createDefaultWorkspaceSettings } from '@speclens/db';
 import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+const DEFAULT_OLLAMA_MODEL_ID = 'llama3.2:3b';
 
 let dbInstance: Database | null = null;
 
@@ -25,7 +28,14 @@ function ensureDefaultWorkspace(db: Database): void {
     }
 
     const settingsRepo = new SettingsRepository(db);
-    settingsRepo.getOrDefault('default');
+    if (!settingsRepo.get('default')) {
+      const defaults = createDefaultWorkspaceSettings('default');
+      settingsRepo.save('default', {
+        ...defaults,
+        llm: { ...defaults.llm, modelId: process.env.OLLAMA_MODEL_ID ?? DEFAULT_OLLAMA_MODEL_ID },
+      });
+    }
+
   } catch {
     // Ignore initialization if tables not ready
   }

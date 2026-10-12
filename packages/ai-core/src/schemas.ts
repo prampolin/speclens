@@ -33,6 +33,7 @@ export const providerManifestSchema = z.object({
 export const providerReadinessSchema = z.object({
   ready: z.boolean(),
   reason: z.string().optional(),
+  code: z.enum(['MODEL_UNAVAILABLE']).optional(),
 });
 
 export const intentSchema = z.enum([

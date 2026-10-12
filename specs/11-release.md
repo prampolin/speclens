@@ -1,6 +1,6 @@
 # Fase 11 — Packaging e release local
 
-**Estado:** Concluída  
+**Estado:** Concluída no registro histórico; gate runtime/air-gap pendente de revalidação OLL-06/07
 **Objetivo:** Instalação reproduzível e documentação.  
 **Dependência:** Gate aprovado da fase 10.
 
@@ -53,3 +53,7 @@
 - [x] Testes indicados executados e resultados registrados.
 - [x] Checagens de privacidade aprovadas.
 - [x] `plan.md` atualizado com a fase finalizada.
+
+## Ressalva da revisão OLL-01–06 — 2026-10-11
+
+Os checkboxes históricos acima não comprovam integração Ollama real ou execução air-gap. A revisão em [ollama-corrections.md](./ollama-corrections.md) registra os testes reproduzidos e corrige essa distinção. Suíte focada 96/96 e regressão 200/200 PASS, com transporte/Docker mockados onde indicado. `docker compose config --quiet` PASS; smoke real parou na ausência de imagem local Ollama. Inferência, monitor de egress e teardown Docker real **NÃO EXECUTADOS**; o aceite runtime continua pendente. Nenhuma fase seguinte iniciada.

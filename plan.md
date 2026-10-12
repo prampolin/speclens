@@ -35,10 +35,11 @@
 
 ## Estado e decisões
 
-- **Fase atual:** Todas as fases concluídas (01 a 11).
+- **Fase atual:** revisão corretiva OLL-06; fases 01–11 são registros históricos, sem comprovação adicional dos gates runtime/air-gap nesta revisão.
 - **Fases concluídas:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11 — todas em 2026-10-11.
-- **Bloqueios:** nenhum.
+- **Bloqueios:** o smoke OLL-06 foi tentado com Docker acessível via elevação, mas a imagem local `ollama/ollama:latest` falta. Não fiz pull/build; o script saiu no pré-requisito sem criar containers ou volumes.
 - **Referência normativa:** [`spec.md`](./spec.md) prevalece em requisitos; ambiguidades devem ser registradas, nunca resolvidas silenciosamente.
+- **Correções posteriores:** OLL-01 a OLL-05 concluídas; OLL-06 parcialmente implementada, pendente smoke/runtime Docker; OLL-07 pendente, conforme [`specs/ollama-corrections.md`](./specs/ollama-corrections.md). As fases 01–11 permanecem como histórico concluído e não foram reabertas nem avançadas por este registro.
 
 ## Registro de execução
 
@@ -56,4 +57,14 @@
 | 2026-10-11 | Fase 09 | Chat UI SSE streaming, Shiki snippets cURL/fetch/Python, Settings por workspace, RAG Inspector com ranking e JSON Pointer, bloqueio no reindex, acessibilidade | vitest run apps/web (11/11 testes ok), next build (5/5 páginas ok), vitest run (132/132 testes ok) | Concluída |
 | 2026-10-11 | Fase 10 | Fail-closed privateMode guard, SSRF URL validator, log redactor, limites parse/depth/timeout/quota, privacy & adversarial evals, baseline de latência e memória real | vitest run (16/16 suites PASS, 157/157 testes ok) | Concluída |
 | 2026-10-11 | Fase 11 | Dockerfile standalone, docker-compose loopback estrito (127.0.0.1:3000), provision-offline.sh, smoke-test.sh, README com mockup, ARCHITECTURE, SECURITY, LICENSE | vitest run (16/16 suites PASS, 157/157 testes ok), provision-offline.sh PASS, smoke-test.sh validado | Concluída |
+| 2026-10-11 | Correção OLL-01 | Default `llama3.2:3b`, comparação exata de modelo, normalização explícita de tag ausente e diagnóstico tipado | `packages/ai-core/tests/ollama-llm.test.ts` (23/23) e `packages/db/tests/storage-settings.test.ts` (20/20), exit code 0 | Concluída; OLL-02 próxima |
+| 2026-10-11 | Correção OLL-02 | Precedência de settings por workspace, provider Ollama por snapshot, readiness por workspace e validação de configuração segura | `pnpm exec vitest run apps/web/src/__tests__/llm-settings.test.ts apps/web/src/__tests__/api-routes.test.ts` (15/15 testes, exit code 0); `git diff --check` sem erros | Concluída; OLL-03 próxima |
+| 2026-10-11 | Correção OLL-03 | Diagnósticos específicos do Ollama, detecção de stream incompleto, descarte de tokens parciais no fallback e final validado | Vitest focado (39/39), TypeScript ai-core e web, `git diff --check` PASS; casos obrigatórios registrados em `specs/ollama-corrections.md` | Concluída; seguida por OLL-04 |
+| 2026-10-11 | Correção OLL-04 | Deadline de geração em conexão e leitura, AbortSignal combinado, cancelamento/limpeza do reader e distinção entre timeout e abort do cliente | `pnpm exec vitest run packages/ai-core/tests/ollama-llm.test.ts` (30/30); TypeScript ai-core e `git diff --check` PASS | Concluída; OLL-05 próxima |
+| 2026-10-11 | Correção OLL-05 | Startup sem downloads implícitos, provisionamento explícito de dependências, detecção por URL/modelo efetivos e cleanup do processo Ollama próprio | `pnpm exec vitest run tests/startup.test.ts` (7/7), `bash -n start.sh scripts/provision-offline.sh`, `git diff --check` PASS; harness mockado | Concluída; OLL-06 próxima |
+| 2026-10-11 | Correção OLL-06 | Compose com namespace de rede compartilhado e rede interna, redirects bloqueados e metadata do modelo revalidada antes de contexto; smoke testa geração, egress, falha local e teardown isolado | `pnpm exec vitest run packages/evals/test/security-benchmark.test.ts packages/ai-core/tests/ollama-llm.test.ts` (38/38); typechecks ai-core/evals PASS; `docker compose config --quiet`, `bash -n scripts/test-ollama-docker.sh`, `git diff --check` PASS; smoke NÃO EXECUTADO: imagem `ollama/ollama:latest` ausente, sem pull/build | Parcial; OLL-06 ainda pendente do smoke e evidência runtime |
 
+
+### Revisão 1–OLL-06 (2026-10-11)
+
+Corrigidas persistência do bootstrap, diagnóstico de política, final duplicado, cancelamento durante metadata/fechamento do iterator, allowlist de origem e isolamento/teardown do smoke. Suíte focada 96/96 e regressão 200/200 PASS; TypeScript ai-core/web e lint PASS (61 warnings). Harness Docker falso 5/5 PASS. Config Compose e sintaxe shell PASS. Imagens locais Ollama/web ausentes: inferência, monitor de rede e teardown real **NÃO EXECUTADOS**. OLL-06 permanece parcial; OLL-07 não iniciada. Detalhes, arquivos e revalidação final em `specs/ollama-corrections.md`.

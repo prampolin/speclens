@@ -29,6 +29,14 @@ SpecLens enforces strict privacy boundaries under `privateMode=true` (enabled by
 
 ## Known Boundaries and Non-Guarantees (MVP)
 
+In Docker Compose, the web process shares the Ollama container's network
+namespace, and that namespace is attached only to a Docker `internal: true`
+network. The host publishes the UI on `127.0.0.1:3000`; the Ollama API is not
+published. HTTP redirects from Ollama are not followed, and model metadata is
+rechecked before every generation. The opt-in OLL-06 smoke uses a uniquely
+named project and temporary volumes, verifies external connection failure,
+and runs synthetic inference using pre-provisioned local model files.
+
 SpecLens is honest about its current security boundaries:
 
 1. **No Formal Compliance Certification**: SpecLens has not undergone third-party SOC2, ISO 27001, or FedRAMP audits.

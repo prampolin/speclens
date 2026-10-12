@@ -1,19 +1,36 @@
 services:
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    ports:
+      # The web container shares this network namespace. Only the UI is exposed
+      # to the host; Ollama's API remains reachable on the shared loopback.
+      - '127.0.0.1:${SPECLENS_WEB_PORT:-3000}:3000'
+    volumes:
+      - ${SPECLENS_OLLAMA_MODELS_PATH:-./models/ollama}:/root/.ollama
+    networks:
+      - private
+    restart: unless-stopped
+
   web:
+    image: ${SPECLENS_WEB_IMAGE:-speclens-web}
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - '127.0.0.1:3000:3000' # apenas loopback, nunca 0.0.0.0 (fail-closed / PM-001)
     volumes:
-      - ./data:/app/data # SQLite e índices vetoriais persistentes
-      - ./models:/app/models # pesos e caches de modelos locais
+      - ${SPECLENS_DATA_PATH:-./data}:/app/data # SQLite e índices vetoriais persistentes
+      - ${SPECLENS_MODELS_PATH:-./models}:/app/models # pesos e caches de modelos locais
     environment:
       - NODE_ENV=production
-      - DATABASE_PATH=/app/data/speclens.db
+      - SPECLENS_DB_PATH=/app/data/speclens.db
       - MODELS_PATH=/app/models
       - PRIVATE_MODE=true
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=http://127.0.0.1:11434
+      - OLLAMA_MODEL_ID=${OLLAMA_MODEL_ID:-llama3.2:3b}
+    depends_on:
+      - ollama
+    network_mode: service:ollama
     restart: unless-stopped
-    network_mode: bridge
-    # Sem dependência de serviços cloud ou proxies externos
+
+networks:
+  private:
+    internal: true

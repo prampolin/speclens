@@ -2,7 +2,10 @@ import type { OllamaStreamChunk } from './types.js';
 import { ollamaStreamChunkSchema } from './schemas.js';
 
 export class OllamaStreamParseError extends Error {
-  constructor(message: string, public readonly rawLine?: string) {
+  constructor(
+    message: string,
+    public readonly rawLine?: string,
+  ) {
     super(message);
     this.name = 'OllamaStreamParseError';
   }
@@ -24,6 +27,12 @@ export async function* parseOllamaStream(
   const reader = response.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
+  let reachedEnd = false;
+  const cancelReader = () => {
+    void reader.cancel(signal?.reason).catch(() => undefined);
+  };
+
+  signal?.addEventListener('abort', cancelReader, { once: true });
 
   try {
     while (true) {
@@ -33,7 +42,12 @@ export async function* parseOllamaStream(
 
       const { done, value } = await reader.read();
 
+      if (signal?.aborted) {
+        throw signal.reason || new Error('Stream operation aborted by signal.');
+      }
+
       if (done) {
+        reachedEnd = true;
         break;
       }
 
@@ -100,6 +114,8 @@ export async function* parseOllamaStream(
       yield parseResult.data as OllamaStreamChunk;
     }
   } finally {
+    signal?.removeEventListener('abort', cancelReader);
+    if (!reachedEnd) cancelReader();
     reader.releaseLock();
   }
 }

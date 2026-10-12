@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
   runPrivacyEvaluation,
   runAdversarialEvaluation,
@@ -6,7 +6,100 @@ import {
   saveLatencyBaseline,
 } from '../src/index.js';
 import fs from 'node:fs';
-import path from 'node:path';
+import { OllamaLLMProvider } from '@speclens/ai-core';
+import type { ExplanationEvent, NormalizedOperation } from '@speclens/ai-core';
+
+const ollamaOperation = {
+  id: 'fake-operation',
+  specId: 'fake-spec',
+  method: 'post',
+  path: '/fake',
+  tags: [],
+  servers: [],
+  parameters: [],
+  responses: {},
+  sourcePointer: '#/paths/~1fake/post',
+} as NormalizedOperation;
+
+async function consumePrivateGeneration(provider: OllamaLLMProvider) {
+  const events: ExplanationEvent[] = [];
+  for await (const event of provider.streamExplanation({
+    query: 'SENTINELA_QUERY',
+    groundedOperations: [ollamaOperation],
+    locale: 'pt-BR',
+  })) events.push(event);
+  return events;
+}
+
+describe('OLL-06 — bloqueios de egress no caminho de geração', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it.each([
+    ['host remoto', 'https://example.com:11434', 'llama3.2:3b'],
+    ['porta fora da allowlist', 'http://127.0.0.1:9999', 'llama3.2:3b'],
+  ])('bloqueia %s antes de enviar contexto', async (_caseName, baseUrl, modelId) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const events = await consumePrivateGeneration(
+      new OllamaLLMProvider({ baseUrl, modelId, privateMode: true }),
+    );
+    expect(events.find((event) => event.type === 'error')).toMatchObject({
+      code: 'PRIVACY_POLICY_VIOLATION',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('não segue redirect externo do endpoint allowlisted', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('', { status: 302, headers: { Location: 'https://example.com/forward' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const events = await consumePrivateGeneration(new OllamaLLMProvider());
+    expect(events.find((event) => event.type === 'error')).toMatchObject({
+      code: 'PRIVACY_POLICY_VIOLATION',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1]?.redirect).toBe('manual');
+    vi.unstubAllGlobals();
+  });
+
+  it('bloqueia modelo remoto/proxy validado por metadata antes de enviar contexto', async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).endsWith('/api/tags')) {
+        return new Response(
+          JSON.stringify({
+            models: [{ name: 'proxy-model:latest', remote_host: 'https://cloud.example.com' }],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('', { status: 500 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const events = await consumePrivateGeneration(
+      new OllamaLLMProvider({ modelId: 'proxy-model:latest' }),
+    );
+    expect(events.find((event) => event.type === 'error')).toMatchObject({
+      code: 'PRIVACY_POLICY_VIOLATION',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain('/api/tags');
+    vi.unstubAllGlobals();
+  });
+
+  it('retorna erro específico se Ollama estiver indisponível, sem tentar outro destino', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+    vi.stubGlobal('fetch', fetchMock);
+    const events = await consumePrivateGeneration(new OllamaLLMProvider());
+    expect(events.find((event) => event.type === 'error')).toMatchObject({
+      code: 'OLLAMA_UNAVAILABLE',
+      recoverable: true,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe('http://127.0.0.1:11434/api/tags');
+    expect(String(fetchMock.mock.calls[0][0])).not.toMatch(/^https?:\/\/(?!127\.0\.0\.1)/);
+  });
+});
 
 describe('Fase 10 — Evals de Privacidade, Segurança Adversarial e Latência', () => {
   it('10.06 — Executa suite de privacidade offline/air-gap e bloqueia todos os violadores', async () => {

@@ -15,6 +15,7 @@ Construir o SpecLens conforme [`spec.md`](./spec.md), [`plan.md`](./plan.md) e a
 - Não marcar `[x]` sem evidência de execução; quando teste não rodou, registrar **NÃO EXECUTADO** e motivo.
 - Atualizar checklist da fase e `plan.md` somente após validação.
 - Sempre informar: arquivos alterados, decisões, testes, riscos, próximo item.
+- Instalação e execução simples em comando único: o projeto deve inicializar completamente com um comando (`./start.sh` ou `pnpm start` / `docker compose up`), orquestrando dependências e serviços locais automaticamente.
 - Preferir código tipado, Zod nas fronteiras, interfaces substituíveis e SDKs diretos.
 - Não introduzir LangChain, dependência cloud ou telemetria sem decisão arquitetural explícita.
 

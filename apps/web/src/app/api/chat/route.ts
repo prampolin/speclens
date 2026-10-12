@@ -9,7 +9,8 @@ import {
 import {
   getEmbeddingProvider,
   getDecisionProvider,
-  getLLMProvider,
+  getWorkspaceLLMProvider,
+  resolveWorkspaceSettings,
   getVectorIndex,
 } from '@/lib/server/providers';
 import {
@@ -19,6 +20,7 @@ import {
   type SourceCitation,
   type ResponseEnvelope,
   responseEnvelopeSchema,
+  PrivacyViolationError,
 } from '@speclens/ai-core';
 import { generateSnippets } from '@speclens/codegen';
 import { highlightSnippet } from '@/lib/server/shiki';
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const settingsRepo = getSettingsRepo();
-    const settings = settingsRepo.getOrDefault(workspaceId);
+    const settings = resolveWorkspaceSettings(workspaceId);
 
     // Fail closed: privateMode check
     if (settings.privateMode) {
@@ -244,9 +246,9 @@ export async function POST(request: NextRequest) {
             message: 'Gerando explicação fundamentada com Ollama...',
           });
 
-          const llmProvider = getLLMProvider();
-          let fullTokens = '';
+          const llmProvider = getWorkspaceLLMProvider(settings);
           let finalEmitted = false;
+          let fallbackReason = 'O Ollama não retornou uma resposta final válida.';
 
           try {
             const eventStream = llmProvider.streamExplanation(
@@ -262,10 +264,8 @@ export async function POST(request: NextRequest) {
               if (signal.aborted) break;
 
               if (event.type === 'token') {
-                fullTokens += event.token || '';
                 sendEvent(event as Record<string, unknown>);
               } else if (event.type === 'final') {
-                finalEmitted = true;
                 const rawEnvelope = (event as any).envelope || (event as any).response;
                 const envelope: ResponseEnvelope = {
                   ...rawEnvelope,
@@ -280,41 +280,56 @@ export async function POST(request: NextRequest) {
                 };
 
                 const validEnvelope = responseEnvelopeSchema.parse(envelope);
+                finalEmitted = true;
                 sendEvent({
                   type: 'final',
                   envelope: validEnvelope,
                   snippetsWithHtml: generatedSnippets,
                 });
+                break;
               } else if (event.type === 'error') {
-                // If LLM returned error (e.g. Ollama offline), log status notice without marking UI as hard-broken
+                fallbackReason = event.message;
                 sendEvent({
                   type: 'status',
                   stage: 'explaining',
-                  message: `Aviso IA: ${event.message}. Fundamentando resposta diretamente no contrato OpenAPI.`,
+                  message: `Aviso IA (${event.code}): ${event.message} Resposta baseada no contrato OpenAPI.`,
                 });
               } else if (event.type === 'status') {
                 sendEvent(event as Record<string, unknown>);
               }
             }
-          } catch (llmErr: any) {
+          } catch {
+            fallbackReason = 'A resposta final do Ollama não passou na validação.';
             sendEvent({
               type: 'status',
               stage: 'explaining',
-              message: `Ollama offline. Fundamentando resposta diretamente no contrato OpenAPI local.`,
+              message: `${fallbackReason} Resposta baseada no contrato OpenAPI.`,
             });
           }
 
           // If final event wasn't emitted (e.g., Ollama was offline), synthesize a grounded schema-valid final envelope
           if (!finalEmitted) {
-            let explanation = fullTokens.trim();
-            if (!explanation) {
+            let explanation = '';
+            {
               if (groundedOperations.length > 0) {
                 const topOp = groundedOperations[0];
+                const isCreationQuery = /(cadastrar|criar|adicionar|salvar|registrar|inserir|create|add|new)\b/i.test(query);
+                const postOp = groundedOperations.find((op) => op.method.toUpperCase() === 'POST');
+
+                let intentNote = '';
+                if (isCreationQuery && topOp.method.toUpperCase() === 'GET') {
+                  if (postOp) {
+                    intentNote = `\n\n*Aviso:* Sua consulta indica intenção de criação/cadastro, mas o resultado principal do índice é um método **GET**. Não foi encontrado um endpoint de cadastro exclusivo para esse recurso nesta especificação; caso ele seja registrado junto com uma entidade pai, verifique a operação **${postOp.method.toUpperCase()} ${postOp.path}**.`;
+                  } else {
+                    intentNote = `\n\n*Aviso:* Sua consulta indica intenção de criação/cadastro, porém nenhum endpoint de método **POST** direto foi encontrado para esta solicitação.`;
+                  }
+                }
+
                 explanation = `Operação encontrada: **${topOp.method.toUpperCase()} ${topOp.path}**${
                   topOp.summary ? ` — ${topOp.summary}` : ''
                 }.${
                   topOp.description ? `\n\n${topOp.description}` : ''
-                }\n\n*Nota: Servidor Ollama local não está em execução ou não respondeu; resposta fundamentada diretamente no contrato OpenAPI.*`;
+                }${intentNote}`;
               } else {
                 explanation = 'Nenhum endpoint correspondente foi encontrado na especificação OpenAPI.';
               }
@@ -326,10 +341,12 @@ export async function POST(request: NextRequest) {
               answer: {
                 locale: 'pt-BR',
                 explanation,
-                limitations:
-                  groundedOperations.length === 0
+                limitations: [
+                  `Resposta produzida sem LLM: ${fallbackReason}`,
+                  ...(groundedOperations.length === 0
                     ? ['Nenhuma operação OpenAPI foi encontrada para fundamentar esta resposta.']
-                    : [],
+                    : []),
+                ],
               },
               sources,
               snippets: generatedSnippets.map((s) => ({
@@ -351,8 +368,8 @@ export async function POST(request: NextRequest) {
         } catch (fatalErr: any) {
           sendEvent({
             type: 'error',
-            code: 'STREAM_FATAL',
-            message: fatalErr instanceof Error ? fatalErr.message : 'Fatal stream failure',
+            code: fatalErr instanceof PrivacyViolationError ? 'PRIVACY_POLICY_VIOLATION' : 'STREAM_FATAL',
+            message: fatalErr instanceof PrivacyViolationError ? 'Configuração do Ollama bloqueada pela política de privacidade.' : 'Falha ao produzir o stream do chat.',
             recoverable: false,
             retryable: false,
           });

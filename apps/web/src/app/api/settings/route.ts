@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
     const workspaceId = searchParams.get('workspaceId') || 'default';
 
     const settingsRepo = getSettingsRepo();
-    const settings = settingsRepo.getOrDefault(workspaceId);
+    const settings = settingsRepo.get(workspaceId) ?? settingsRepo.save(
+      workspaceId,
+      (await import('@/lib/server/providers')).resolveWorkspaceSettings(workspaceId)
+    );
 
     return NextResponse.json({
       settings,
@@ -45,7 +48,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const settingsRepo = getSettingsRepo();
-    const currentSettings = settingsRepo.getOrDefault(workspaceId);
+    const currentSettings = settingsRepo.get(workspaceId) ?? (await import('@/lib/server/providers')).resolveWorkspaceSettings(workspaceId);
 
     const merged = {
       ...currentSettings,
@@ -55,6 +58,18 @@ export async function PATCH(request: NextRequest) {
 
     // Zod validation on write
     const validated = workspaceSettingsSchema.parse(merged);
+    if (validated.llm.providerId !== 'ollama-local') {
+      return NextResponse.json(
+        { code: 'UNSUPPORTED_PROVIDER', message: 'Unsupported LLM provider.' },
+        { status: 400 }
+      );
+    }
+    if (validated.privateMode && /^(cloud|remote|openai|anthropic|claude|gemini|azure|bedrock|cohere|mistral-cloud)\//i.test(validated.llm.modelId)) {
+      return NextResponse.json(
+        { code: 'UNSAFE_PROVIDER_CONFIGURATION', message: 'Cloud-backed models are not allowed in Private Mode.' },
+        { status: 400 }
+      );
+    }
 
     // Check if embedding configuration changed requiring reindex
     const isEmbeddingChanged =

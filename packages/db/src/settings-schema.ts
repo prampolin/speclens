@@ -42,7 +42,7 @@ export const DEFAULT_WORKSPACE_SETTINGS: Omit<WorkspaceSettings, 'workspaceId'> 
   },
   llm: {
     providerId: 'ollama-local',
-    modelId: 'llama3.2:latest',
+    modelId: 'llama3.2:3b',
   },
   retrieval: {
     lexicalEnabled: true,

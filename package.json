@@ -5,6 +5,8 @@
   "packageManager": "pnpm@11.13.1",
   "type": "module",
   "scripts": {
+    "start": "./start.sh",
+    "start:auto": "./start.sh",
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter \"@speclens/*\" build && pnpm --filter web build",
     "lint": "eslint .",

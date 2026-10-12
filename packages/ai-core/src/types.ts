@@ -31,6 +31,7 @@ export interface ProviderManifest {
 export interface ProviderReadiness {
   ready: boolean;
   reason?: string;
+  code?: 'MODEL_UNAVAILABLE';
 }
 
 export interface EmbeddingProvider {

@@ -20,6 +20,8 @@ import {
   type DecisionProvider,
   type LLMProvider,
   type ExplanationEvent,
+  OllamaLLMProvider,
+  responseEnvelopeSchema,
 } from '@speclens/ai-core';
 
 describe('Fase 09 — API Routes Vitest Unit Tests', () => {
@@ -93,12 +95,10 @@ describe('Fase 09 — API Routes Vitest Unit Tests', () => {
       yield {
         type: 'token',
         token: 'Esta operação ',
-        content: 'Esta operação ',
       };
       yield {
         type: 'token',
         token: 'lista itens do catálogo.',
-        content: 'lista itens do catálogo.',
       };
       yield {
         type: 'final',
@@ -161,7 +161,7 @@ describe('Fase 09 — API Routes Vitest Unit Tests', () => {
 
   describe('GET /api/providers', () => {
     it('deve retornar lista de provedores registrados com readiness status', async () => {
-      const response = await providersGet();
+      const response = await providersGet(new NextRequest('http://localhost:3000/api/providers?workspaceId=default'));
       expect(response.status).toBe(200);
 
       const json = await response.json();
@@ -333,6 +333,85 @@ paths:
   });
 
   describe('POST /api/chat (SSE streaming)', () => {
+    it('integra 404 do Ollama com fallback citado e sem conteúdo sensível nos erros', async () => {
+      const fixture = 'openapi: "3.0.0"\ninfo:\n  title: Ficticia\n  version: "1"\npaths:\n  /widgets:\n    get:\n      operationId: listWidgets\n      responses:\n        "200":\n          description: OK\n';
+      await specsPost(new NextRequest('http://localhost:3000/api/specifications', { method: 'POST', body: fixture }));
+      setLLMProvider(new OllamaLLMProvider({ modelId: 'missing:latest' }));
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async (url) => String(url).endsWith('/api/tags')
+        ? Response.json({ models: [{ name: 'missing:latest' }] })
+        : new Response('', { status: 404 });
+      try {
+        const response = await chatPost(new NextRequest('http://localhost:3000/api/chat', {
+          method: 'POST', body: JSON.stringify({ query: 'SENTINELA_CONSULTA widgets', workspaceId: 'default' }),
+        }));
+        const events = (await response.text()).split('\n').filter((line) => line.startsWith('data: ')).map((line) => JSON.parse(line.slice(6)));
+        const finals = events.filter((event) => event.type === 'final');
+        expect(finals).toHaveLength(1);
+        expect(responseEnvelopeSchema.safeParse(finals[0].envelope).success).toBe(true);
+        expect(finals[0].envelope.sources.some((source: { path: string }) => source.path === '/widgets')).toBe(true);
+        expect(finals[0].envelope.answer.limitations[0]).toContain('missing:latest');
+        expect(finals[0].envelope.answer.explanation).toContain('/widgets');
+        expect(events.some((event) => event.type === 'status' && event.message?.includes('MODEL_UNAVAILABLE'))).toBe(true);
+        expect(JSON.stringify(events.filter((event) => event.type === 'status' || event.type === 'error'))).not.toContain('SENTINELA_CONSULTA');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+    it('descarta tokens parciais e registra o motivo seguro do fallback no final', async () => {
+      setLLMProvider({
+        ...mockLLMProvider,
+        async *streamExplanation(): AsyncIterable<ExplanationEvent> {
+          yield { type: 'token', token: 'SENTINELA_PARCIAL' };
+          yield { type: 'error', code: 'MODEL_UNAVAILABLE', message: 'Modelo local ausente.', recoverable: true };
+        },
+      });
+      const response = await chatPost(new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ query: 'consulta fictícia', workspaceId: 'default' }),
+      }));
+      const events = (await response.text()).split('\n').filter((line) => line.startsWith('data: ')).map((line) => JSON.parse(line.slice(6)));
+      const finals = events.filter((event) => event.type === 'final');
+      expect(finals).toHaveLength(1);
+      expect(finals[0].envelope.answer.explanation).not.toContain('SENTINELA_PARCIAL');
+      expect(finals[0].envelope.answer.limitations).toContain('Resposta produzida sem LLM: Modelo local ausente.');
+      expect(events.find((event) => event.type === 'status' && event.message?.includes('MODEL_UNAVAILABLE'))).toBeDefined();
+    });
+    it('recupera envelope inválido com um único final fundamentado', async () => {
+      setLLMProvider({
+        ...mockLLMProvider,
+        async *streamExplanation(): AsyncIterable<ExplanationEvent> {
+          yield { type: 'final', envelope: { schemaVersion: 2 as 1, query: 'x', answer: { locale: 'pt-BR', explanation: 'inválida', limitations: [] }, sources: [], snippets: [] } };
+        },
+      });
+      const response = await chatPost(new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST', body: JSON.stringify({ query: 'consulta fictícia', workspaceId: 'default' }),
+      }));
+      const events = (await response.text()).split('\n').filter((line) => line.startsWith('data: ')).map((line) => JSON.parse(line.slice(6)));
+      expect(events.filter((event) => event.type === 'final')).toHaveLength(1);
+    });
+    it('encerra o provider no primeiro final validado e impede finais duplicados', async () => {
+      let closed = false;
+      let advancedPastFinal = false;
+      setLLMProvider({
+        ...mockLLMProvider,
+        async *streamExplanation(): AsyncIterable<ExplanationEvent> {
+          try {
+            const envelope = { schemaVersion: 1 as const, query: 'x', answer: { locale: 'pt-BR' as const, explanation: 'Resposta fictícia', limitations: [] }, sources: [], snippets: [] };
+            yield { type: 'final', envelope };
+            advancedPastFinal = true;
+            yield { type: 'final', envelope };
+          } finally { closed = true; }
+        },
+      });
+      const response = await chatPost(new NextRequest('http://localhost/api/chat', {
+        method: 'POST', body: JSON.stringify({ query: 'consulta fictícia', workspaceId: 'default' }),
+      }));
+      const events = (await response.text()).split('\n').filter((line) => line.startsWith('data: ')).map((line) => JSON.parse(line.slice(6)));
+      expect(events.filter((event) => event.type === 'final')).toHaveLength(1);
+      expect(closed).toBe(true);
+      expect(advancedPastFinal).toBe(false);
+    });
     it('deve emitir fluxo SSE estruturado com status, intent, sources e final', async () => {
       // Import a spec first
       const petstoreYaml = `
@@ -391,10 +470,14 @@ paths:
       // Verify the final envelope structure
       const finalEvent = events.find((e) => e.type === 'final');
       expect(finalEvent).toBeDefined();
+      expect(events.filter((e) => e.type === 'final')).toHaveLength(1);
+      expect(responseEnvelopeSchema.safeParse(finalEvent.envelope).success).toBe(true);
       expect(finalEvent.envelope.schemaVersion).toBe(1);
       expect(finalEvent.envelope.answer.locale).toBe('pt-BR');
       expect(finalEvent.envelope.sources.length).toBeGreaterThan(0);
       expect(finalEvent.envelope.sources[0].path).toBe('/pets');
+      expect(finalEvent.envelope.snippets.length).toBeGreaterThan(0);
+      expect(finalEvent.envelope.snippets.every((snippet: { code: string }) => snippet.code.includes('/pets'))).toBe(true);
     });
 
     it('deve retornar 400 para query vazia', async () => {

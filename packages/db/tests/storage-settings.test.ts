@@ -206,6 +206,7 @@ describe('Fase 03 — Storage & Settings (@speclens/db)', () => {
       expect(defaultSettings.embedding.providerId).toBe('transformers-local');
       expect(defaultSettings.decision.providerId).toBe('laya-local');
       expect(defaultSettings.llm.providerId).toBe('ollama-local');
+      expect(defaultSettings.llm.modelId).toBe('llama3.2:3b');
     });
 
     it('deve salvar e recuperar configurações válidas', () => {
@@ -217,6 +218,15 @@ describe('Fase 03 — Storage & Settings (@speclens/db)', () => {
 
       const loaded = settingsRepo.get(ws.id);
       expect(loaded).toEqual(settings);
+    });
+
+    it('preserva a seleção de modelo já persistida ao carregar settings', () => {
+      const ws = workspaceRepo.create({ title: 'Legacy Model Test' });
+      const settings = { ...createDefaultWorkspaceSettings(ws.id), llm: {
+        providerId: 'ollama-local', modelId: 'llama3.2:latest',
+      } };
+      settingsRepo.save(ws.id, settings);
+      expect(settingsRepo.get(ws.id)?.llm.modelId).toBe('llama3.2:latest');
     });
 
     it('deve rejeitar configurações com topK não-positivo no save e falhar fechado', () => {

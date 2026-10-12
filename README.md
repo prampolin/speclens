@@ -49,38 +49,28 @@ SpecLens transforms OpenAPI specifications (3.0, 3.1, and Swagger 2.0) into an i
 
 ---
 
-## Quick Start (Local Development)
+---
 
-### 1. Clone and Install Dependencies
+## Quick Start — Comando Único 🚀
+
+Execute o provisionamento explícito antes de desconectar a rede: ele instala as dependências travadas pelo lockfile. Provisione também o modelo Ollama desejado com `ollama pull <model>`. Depois disso, o SpecLens inicia com um comando. A inicialização não instala pacotes, baixa modelos nem acessa registries. Se Ollama ou o modelo selecionado estiver ausente, o app sobe em modo degradado e informa a causa; cada modelo selecionado por workspace é verificado quando usado.
 
 ```bash
 git clone https://github.com/vitorprampolin/speclens.git
 cd speclens
-pnpm install
-```
-
-### 2. Prepare Local Models
-
-Start Ollama and download the recommended local model:
-
-```bash
-ollama serve
-ollama pull llama3.2:3b
-```
-
-Run the offline provisioning script to prepare directories and verify local assets:
-
-```bash
 bash scripts/provision-offline.sh
+./start.sh
+# ou: pnpm start
 ```
 
-### 3. Run the Development Server
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
-```bash
-pnpm dev
-```
+### Aplicativo Desktop / PWA (Progressive Web App) 📱💻
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+O SpecLens possui manifesto web completo e suporte a **PWA (Progressive Web App)**:
+- No **Chrome / Edge**: clique no ícone **"Instalar SpecLens"** na barra de endereço.
+- No **Safari (macOS Sonoma/Sequoia)**: acesse o menu *Arquivo > Adicionar ao Dock* (ou botão de compartilhamento).
+- O SpecLens abrirá em uma **janela dedicada sem barras de navegador**, com ícone próprio no Dock/barra de tarefas e comportamento de aplicativo nativo.
 
 ---
 
@@ -89,19 +79,45 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 SpecLens includes a production-ready Docker Compose configuration that binds **strictly to loopback (`127.0.0.1`)** to prevent accidental exposure to external network interfaces:
 
 ```bash
-# 1. Provision offline assets before build
+# 1. Provision npm dependencies before disconnecting
 bash scripts/provision-offline.sh
 
-# 2. Build and launch the container
+# 2. Build images while connected, then launch without runtime downloads
 docker compose up -d --build
 
 # 3. Verify health
 bash scripts/smoke-test.sh
 ```
 
-Container volumes:
-- `./data`: Stores the persistent SQLite database (`speclens.db`) and vector indices.
-- `./models`: Local embedding weights and classification caches.
+Compose persists SQLite/index data under `./data`, embedding assets under
+`./models`, and Ollama weights under `./models/ollama` by default. Override
+those bind paths with `SPECLENS_DATA_PATH`, `SPECLENS_MODELS_PATH`, and
+`SPECLENS_OLLAMA_MODELS_PATH` if needed. The web and Ollama containers share Ollama's
+network namespace, so the web process uses `http://127.0.0.1:11434`; the
+project network is `internal: true` and the Ollama API is not published on the
+host. Only the UI is published on `127.0.0.1:3000`.
+
+Provision the selected Ollama model explicitly while connected. Seed the
+default Compose model directory before starting the private network:
+
+```bash
+mkdir -p models/ollama
+docker run --rm --volume "$PWD/models/ollama:/root/.ollama" ollama/ollama:latest pull llama3.2:3b
+```
+
+The Compose runtime itself does not pull models. For OLL-06's isolated Docker
+smoke, keep the source volume provisioned and run:
+
+```bash
+bash scripts/test-ollama-docker.sh
+```
+
+The smoke requires local application/Ollama images and a provisioned model. It
+copies the source model directory into a unique temporary directory, mounts
+temporary directories for all app data, uses a unique Compose project, blocks
+external egress, runs one synthetic inference, then removes only that test
+project and its temporary directories. Set `OLLAMA_SOURCE_DIR` if model files
+are stored elsewhere.
 
 ---
 
@@ -114,7 +130,7 @@ Container volumes:
 
 ### Linux / Docker
 1. Ensure build tools (`build-essential`, `python3`, `make`, `g++`) are available for compiling native Node addons during `pnpm install`.
-2. When running Docker alongside a host Ollama instance, `docker-compose.yml` connects through `host.docker.internal:11434`. On Linux hosts without Docker Desktop, add `--add-host=host.docker.internal:host-gateway` if necessary.
+2. Compose runs Ollama and the web process in a shared network namespace on a Docker internal network; it does not connect to a host Ollama service.
 
 ---
 
@@ -122,9 +138,9 @@ Container volumes:
 
 SpecLens is designed to remain completely operational when disconnected from the internet:
 
-1. Follow the **Provisioning** step while connected (`bash scripts/provision-offline.sh`).
+1. Follow the **Provisioning** step while connected (`bash scripts/provision-offline.sh`) and explicitly provision the desired Ollama model (`ollama pull <model>`). Runtime startup does not install npm dependencies or models.
 2. Disconnect your machine from the network (disable Wi-Fi / unplug ethernet).
-3. Start the application (`pnpm dev` or `docker compose up -d`).
+3. Start the application (`./start.sh` or `docker compose up -d`).
 4. Upload an OpenAPI specification, search endpoints, and execute queries.
 5. All operations run against local SQLite, in-process embeddings, and local Ollama without egress attempts.
 
@@ -141,8 +157,8 @@ SpecLens is designed to remain completely operational when disconnected from the
 
 ## Troubleshooting
 
-- **Ollama connection refused**: Ensure Ollama is running (`ollama serve`) and accessible at `http://127.0.0.1:11434`.
-- **Missing model error**: If the chat indicates the model is not found, verify installed models with `ollama list` and run `ollama pull llama3.2:3b`.
+- **Ollama connection refused**: Ensure Ollama is running (`ollama serve`) and accessible at the configured `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`).
+- **Missing model error**: Check the exact selected model tag with `ollama list`; provision it explicitly with `ollama pull <model>` while connected, then retry. SpecLens never pulls models during startup.
 - **Database lock or permission issues**: Ensure the user running the process has write permissions to `./data` and `./models`.
 - **Reindexing needed**: When switching embedding models or vector dimensionality in workspace settings, initiate a reindex from the UI settings panel.
 

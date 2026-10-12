@@ -48,7 +48,7 @@ export default function SettingsPage() {
         .then((d) => {
           if (d.settings) setSettings(d.settings);
         }),
-      fetch('/api/providers')
+      fetch('/api/providers?workspaceId=default')
         .then((r) => r.json())
         .then((d) => {
           if (d.providers) setProviders(d.providers);
