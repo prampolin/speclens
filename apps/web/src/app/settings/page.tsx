@@ -31,7 +31,7 @@ interface ProviderInfo {
 export default function SettingsPage() {
   const [settings, setSettings] = useState<WorkspaceSettings>(DEFAULT_CONFIG);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [_isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [reindexRequired, setReindexRequired] = useState(false);
@@ -263,6 +263,42 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      <section aria-labelledby="inference-title" className="p-5 rounded-xl bg-card/60 border border-border space-y-4">
+        <h2 id="inference-title" className="text-sm font-semibold">Modelos na conversa</h2>
+        <p className="text-xs text-muted-foreground">
+          Escolha só LLM, só Laya ou ambos. Mantenha pelo menos um ligado e clique em Salvar Alterações.
+          A busca na especificação e os exemplos continuam disponíveis em todos os modos.
+        </p>
+        {([
+          { key: 'llmEnabled', label: 'Usar LLM', description: 'Gera explicações com Ollama local. Desligado: resposta baseada no contrato OpenAPI.' },
+          { key: 'layaEnabled', label: 'Usar Laya', description: 'Classifica a intenção, com fallback local por regras quando necessário. Desligado: busca direta.' },
+        ] as const).map(({ key, label, description }) => {
+          const inference = settings.inference ?? { layaEnabled: true, llmEnabled: true };
+          const enabled = inference[key];
+          const otherEnabled = key === 'llmEnabled' ? inference.layaEnabled : inference.llmEnabled;
+          return (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <div>
+                <p id={`${key}-label`} className="text-sm font-medium">{label}</p>
+                <p id={`${key}-description`} className="text-xs text-muted-foreground">{description}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-labelledby={`${key}-label`}
+                aria-describedby={`${key}-description`}
+                aria-checked={enabled}
+                disabled={isLoading || isSaving || (enabled && !otherEnabled)}
+                onClick={() => setSettings({ ...settings, inference: { ...inference, [key]: !enabled } })}
+                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${enabled ? 'bg-emerald-500' : 'bg-muted'}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          );
+        })}
+      </section>
+
       {/* Providers Configuration Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 1. Embedding Provider */}
@@ -346,7 +382,7 @@ export default function SettingsPage() {
                   : 'bg-purple-950 text-purple-300 border border-purple-800'
               }`}
             >
-              {decProvider?.ready ? 'Pronto (Laya / Regras)' : 'Fallback Ativo'}
+              {settings.inference?.layaEnabled === false ? 'Desativado' : decProvider?.ready ? 'Pronto (Laya / Regras)' : 'Fallback Ativo'}
             </span>
           </div>
 
@@ -400,7 +436,7 @@ export default function SettingsPage() {
                   : 'bg-amber-950 text-amber-300 border border-amber-800'
               }`}
             >
-              {llmProvider?.ready ? 'Conectado (127.0.0.1)' : 'Ollama Offline / Aguardando'}
+              {settings.inference?.llmEnabled === false ? 'Desativado' : llmProvider?.ready ? 'Conectado (127.0.0.1)' : 'Ollama Offline / Aguardando'}
             </span>
           </div>
 
@@ -439,7 +475,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {!llmProvider?.ready && (
+          {settings.inference?.llmEnabled !== false && !llmProvider?.ready && (
             <p className="text-[11px] text-muted-foreground">
               Para explicações completas via IA local, certifique-se de que o Ollama esteja rodando em{' '}
               <span className="font-mono text-foreground">http://127.0.0.1:11434</span> com o modelo baixado. Caso offline, respostas contratuais continuam sendo entregues via OpenAPI canônico.

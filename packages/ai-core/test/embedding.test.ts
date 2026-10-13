@@ -9,7 +9,10 @@ import {
   cosineSimilarity,
   namespaceId,
   areNamespacesCompatible,
-  VectorNamespaceKey,
+  computeEmbeddingFingerprint,
+  areEmbeddingSpacesCompatible,
+  type EmbeddingSpaceSpec,
+  type VectorNamespaceKey,
 } from '../src/index.js';
 
 describe('TransformersLocalEmbeddingProvider & VectorIndex', () => {
@@ -168,6 +171,83 @@ describe('TransformersLocalEmbeddingProvider & VectorIndex', () => {
           modelRevision: 'other-rev',
         })
       ).toBe(false);
+    });
+
+    it('changes embedding fingerprint and rejects compatibility for every incompatible input (RAG-01)', () => {
+      const baseSpace: EmbeddingSpaceSpec = {
+        providerId: 'transformers-local',
+        implementationVersion: '1.0.0',
+        modelId: 'Xenova/all-MiniLM-L6-v2',
+        modelRevision: 'rev-sha256-001',
+        assetDigest: 'sha256:1111222233334444',
+        dimensions: 384,
+        pooling: 'mean',
+        normalize: true,
+        preprocessingVersion: 'tokenizer-v1',
+        operationTextVersion: 'optext-v1',
+        encodingVersion: 'float32_le_v1',
+      };
+
+      const baseFingerprint = computeEmbeddingFingerprint(baseSpace);
+      expect(baseFingerprint).toBe(computeEmbeddingFingerprint({ ...baseSpace }));
+      expect(areEmbeddingSpacesCompatible(baseSpace, { ...baseSpace })).toBe(true);
+
+      const incompatibleMutations: Array<Partial<EmbeddingSpaceSpec>> = [
+        { providerId: 'custom-onnx-local' },
+        { implementationVersion: '1.1.0' },
+        { modelId: 'Xenova/bge-small-en-v1.5' },
+        { modelRevision: 'rev-sha256-002' },
+        { assetDigest: 'sha256:9999888877776666' },
+        { dimensions: 768 },
+        { pooling: 'cls' },
+        { normalize: false },
+        { preprocessingVersion: 'tokenizer-v2' },
+        { operationTextVersion: 'optext-v2' },
+      ];
+
+      for (const mutation of incompatibleMutations) {
+        const mutated: EmbeddingSpaceSpec = { ...baseSpace, ...mutation };
+        const mutatedFingerprint = computeEmbeddingFingerprint(mutated);
+        expect(mutatedFingerprint).not.toBe(baseFingerprint);
+        expect(areEmbeddingSpacesCompatible(baseSpace, mutated)).toBe(false);
+      }
+
+      // Extended namespaceId also changes for every incompatible optional input
+      const fullNsKey: VectorNamespaceKey = {
+        ...baseKey,
+        implementationVersion: '1.0.0',
+        assetDigest: 'sha256:aaaa',
+        pooling: 'mean',
+        normalize: true,
+        preprocessingVersion: 'v1',
+        operationTextVersion: 'v1.0.0',
+        encodingVersion: 'float32_le_v1',
+      };
+      const baseNsId = namespaceId(fullNsKey);
+
+      const nsMutations: Array<Partial<VectorNamespaceKey>> = [
+        { workspaceId: 'ws-other' },
+        { specificationId: 'spec-other' },
+        { providerId: 'other-provider' },
+        { modelId: 'other-model' },
+        { modelRevision: 'rev-other' },
+        { dimensions: 512 },
+        { chunkingVersion: 'v2.0.0' },
+        { implementationVersion: '2.0.0' },
+        { assetDigest: 'sha256:bbbb' },
+        { pooling: 'cls' },
+        { normalize: false },
+        { preprocessingVersion: 'v2' },
+        { operationTextVersion: 'v2.0.0' },
+      ];
+
+      for (const mutation of nsMutations) {
+        const mutatedKey: VectorNamespaceKey = { ...fullNsKey, ...mutation };
+        expect(namespaceId(mutatedKey)).not.toBe(baseNsId);
+        if (!('workspaceId' in mutation) && !('specificationId' in mutation)) {
+          expect(areNamespacesCompatible(fullNsKey, mutatedKey)).toBe(false);
+        }
+      }
     });
   });
 });

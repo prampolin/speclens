@@ -1,3 +1,4 @@
+import { inferenceSettingsSchema } from '@speclens/db';
 import { z } from 'zod';
 import {
   normalizedOperationSchema,
@@ -78,6 +79,13 @@ export const vectorNamespaceKeySchema = z.object({
   modelRevision: z.string().min(1),
   dimensions: z.number().int().positive(),
   chunkingVersion: z.string().min(1),
+  implementationVersion: z.string().min(1).optional(),
+  assetDigest: z.string().min(1).optional(),
+  pooling: z.enum(['mean', 'cls', 'none']).optional(),
+  normalize: z.boolean().optional(),
+  preprocessingVersion: z.string().min(1).optional(),
+  operationTextVersion: z.string().min(1).optional(),
+  encodingVersion: z.literal('float32_le_v1').optional(),
 });
 
 export const sourceCitationSchema = z.object({
@@ -139,6 +147,7 @@ export const explanationEventSchema = z.discriminatedUnion('type', [
 ]);
 
 export const workspaceSettingsSchema = z.object({
+  inference: inferenceSettingsSchema.optional(),
   schemaVersion: z.number().int().positive(),
   workspaceId: z.string().min(1),
   privateMode: z.boolean(),
@@ -155,12 +164,36 @@ export const workspaceSettingsSchema = z.object({
     providerId: z.string().min(1),
     modelId: z.string().min(1),
   }),
-  retrieval: z.object({
-    lexicalEnabled: z.boolean(),
-    vectorEnabled: z.boolean(),
-    topK: z.number().int().positive(),
-  }),
+  retrieval: z
+    .object({
+      lexicalEnabled: z.boolean(),
+      vectorEnabled: z.boolean(),
+      topK: z.number().int().positive(),
+    })
+    .refine((r) => r.lexicalEnabled || r.vectorEnabled, {
+      message:
+        'At least one retrieval mode (lexicalEnabled or vectorEnabled) must be enabled.',
+      path: ['vectorEnabled'],
+    }),
 });
+
+export {
+  jobLifecycleStateSchema,
+  lexicalCapabilityStateSchema,
+  vectorCapabilityStateSchema,
+  effectiveRetrievalModeSchema,
+  explanationModeSchema,
+  ragReasonCodeSchema,
+  embeddingPoolingModeSchema,
+  vectorEncodingVersionSchema,
+  vectorGenerationStatusSchema,
+  embeddingSpaceSpecSchema,
+  vectorGenerationIdentitySchema,
+  specificationCapabilityDtoSchema,
+  requestedVsEffectiveSettingsSchema,
+  isPinnedModelRevision,
+  migrateLegacyWorkspaceSettings,
+} from '@speclens/db';
 
 export {
   executionLocationSchema as ExecutionLocationSchema,
@@ -179,4 +212,3 @@ export {
   explanationEventSchema as ExplanationEventSchema,
   workspaceSettingsSchema as WorkspaceSettingsSchema,
 };
-

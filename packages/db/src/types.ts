@@ -61,12 +61,126 @@ export interface WorkspaceSettingsEntity {
 
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
+export type JobLifecycleState =
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'completed_with_warnings'
+  | 'failed'
+  | 'cancelled'
+  | 'interrupted';
+
+export type LexicalCapabilityState = 'pending' | 'ready' | 'failed' | 'disabled';
+
+export type VectorCapabilityState =
+  | 'pending'
+  | 'building'
+  | 'ready'
+  | 'unavailable'
+  | 'stale'
+  | 'failed'
+  | 'disabled';
+
+export type EffectiveRetrievalMode =
+  | 'hybrid'
+  | 'lexical_only'
+  | 'vector_only'
+  | 'unavailable';
+
+export type ExplanationMode = 'llm' | 'contract_only';
+
+export type RagReasonCode =
+  | 'MODEL_MISSING'
+  | 'MODEL_INVALID'
+  | 'EMBEDDING_RUNTIME_UNAVAILABLE'
+  | 'EMBEDDING_FAILED'
+  | 'INDEX_INCOMPATIBLE'
+  | 'INDEX_CORRUPT'
+  | 'INDEX_UNVERIFIED'
+  | 'JOB_INTERRUPTED'
+  | 'JOB_CANCELLED'
+  | 'VECTOR_DISABLED'
+  | 'LEXICAL_DISABLED'
+  | 'LEXICAL_FAILED'
+  | 'BOTH_RETRIEVAL_MODES_DISABLED'
+  | 'EMPTY_SPECIFICATION'
+  | 'PRIVACY_POLICY_VIOLATION'
+  | 'WORKSPACE_OWNERSHIP_MISMATCH'
+  | 'SPECIFICATION_INACTIVE'
+  | 'OLLAMA_UNAVAILABLE'
+  | 'OLLAMA_STREAM_INVALID';
+
+export type EmbeddingPoolingMode = 'mean' | 'cls' | 'none';
+export type VectorEncodingVersion = 'float32_le_v1';
+export type VectorGenerationStatus =
+  | 'staging'
+  | 'active'
+  | 'superseded'
+  | 'failed'
+  | 'abandoned';
+
+export interface EmbeddingSpaceSpec {
+  providerId: string;
+  implementationVersion: string;
+  modelId: string;
+  modelRevision: string;
+  assetDigest: string;
+  dimensions: number;
+  pooling: EmbeddingPoolingMode;
+  normalize: boolean;
+  preprocessingVersion: string;
+  operationTextVersion: string;
+  encodingVersion: VectorEncodingVersion;
+}
+
+export interface VectorGenerationIdentity {
+  generationId: string;
+  namespaceId: string;
+  workspaceId: string;
+  specificationId: string;
+  specificationVersion: string;
+  sourceChecksum: string;
+  embeddingFingerprint: string;
+  embeddingSpace: EmbeddingSpaceSpec;
+  expectedOperationCount: number;
+  embeddedOperationCount: number;
+  status: VectorGenerationStatus;
+  committedAt: string | null;
+  createdAt: string;
+}
+
+export interface SpecificationCapabilityDto {
+  workspaceId: string;
+  specificationId: string;
+  specificationVersion: string;
+  isActive: boolean;
+  operationCount: number;
+  embeddedOperationCount: number;
+  jobState: JobLifecycleState;
+  lexicalCapability: LexicalCapabilityState;
+  vectorCapability: VectorCapabilityState;
+  effectiveRetrieval: EffectiveRetrievalMode;
+  activeGenerationId: string | null;
+  generationFingerprint: string | null;
+  generationCommitted: boolean;
+  retryable: boolean;
+  reasonCodes: RagReasonCode[];
+  updatedAt: string;
+}
+
 export interface IngestionJobEntity {
   id: string;
   workspaceId: string;
   specificationId: string;
   status: JobStatus;
+  lifecycleState?: JobLifecycleState;
   progress: number;
+  operationCount?: number;
+  embeddedCount?: number;
+  activeGenerationId?: string | null;
+  generationFingerprint?: string | null;
+  retryable?: boolean;
+  reasonCodes?: RagReasonCode[];
   errors?: string[];
   warnings?: string[];
   createdAt: string;

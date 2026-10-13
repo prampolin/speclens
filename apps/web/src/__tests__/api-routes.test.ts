@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createDatabase, type Database } from '@speclens/db';
 import { setTestDatabase } from '@/lib/server/db';
@@ -133,12 +133,63 @@ describe('Fase 09 — API Routes Vitest Unit Tests', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     try {
       testDb.close();
     } catch {
       // Ignore cleanup error
     }
     setTestDatabase(null);
+  });
+
+  describe('Inference switches', () => {
+    it.each([
+      { layaEnabled: false, llmEnabled: true },
+      { layaEnabled: true, llmEnabled: false },
+      { layaEnabled: true, llmEnabled: true },
+    ])('persists and executes only enabled providers: %j', async (inference) => {
+      const classify = vi.spyOn(mockDecisionProvider, 'classify');
+      const explain = vi.spyOn(mockLLMProvider, 'streamExplanation');
+      const decisionReadiness = vi.spyOn(mockDecisionProvider, 'readiness');
+      const llmReadiness = vi.spyOn(mockLLMProvider, 'readiness');
+      const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected egress'));
+      const patch = await settingsPatch(new NextRequest('http://localhost/api/settings', {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workspaceId: 'default', settings: { inference } }),
+      }));
+      expect(patch.status).toBe(200);
+      const saved = await patch.json();
+      expect(saved.settings.inference).toEqual(inference);
+      expect(saved.settings.privateMode).toBe(true);
+      expect(saved.reindexRequired).toBe(false);
+      const read = await settingsGet(new NextRequest('http://localhost/api/settings'));
+      expect((await read.json()).settings.inference).toEqual(inference);
+      await providersGet(new NextRequest('http://localhost/api/providers'));
+      expect(decisionReadiness).toHaveBeenCalledTimes(inference.layaEnabled ? 1 : 0);
+      expect(llmReadiness).toHaveBeenCalledTimes(inference.llmEnabled ? 1 : 0);
+      const response = await chatPost(new NextRequest('http://localhost/api/chat', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workspaceId: 'default', query: 'listar produtos' }),
+      }));
+      const stream = await response.text();
+      expect(classify).toHaveBeenCalledTimes(inference.layaEnabled ? 1 : 0);
+      expect(explain).toHaveBeenCalledTimes(inference.llmEnabled ? 1 : 0);
+      expect(stream).toContain('"type":"retrieval"');
+      expect(stream).toContain('"type":"final"');
+      if (!inference.llmEnabled) expect(stream).toContain('LLM desativado nas configurações.');
+      expect(network).not.toHaveBeenCalled();
+    });
+
+    it('rejects both disabled without overwriting saved settings', async () => {
+      const before = await (await settingsGet(new NextRequest('http://localhost/api/settings'))).json();
+      const response = await settingsPatch(new NextRequest('http://localhost/api/settings', {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ settings: { inference: { layaEnabled: false, llmEnabled: false } } }),
+      }));
+      expect(response.status).toBe(400);
+      const after = await (await settingsGet(new NextRequest('http://localhost/api/settings'))).json();
+      expect(after).toEqual(before);
+    });
   });
 
   describe('GET /api/health', () => {
@@ -217,6 +268,29 @@ describe('Fase 09 — API Routes Vitest Unit Tests', () => {
           workspaceId: 'default',
           settings: {
             schemaVersion: 'invalid-string', // should be number
+          },
+        }),
+      });
+
+      const res = await settingsPatch(patchReq);
+      expect(res.status).toBe(400);
+
+      const json = await res.json();
+      expect(json.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('deve rejeitar PATCH /api/settings quando lexicalEnabled e vectorEnabled estão ambos false (RAG-01)', async () => {
+      const patchReq = new NextRequest('http://localhost:3000/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: 'default',
+          settings: {
+            retrieval: {
+              lexicalEnabled: false,
+              vectorEnabled: false,
+              topK: 5,
+            },
           },
         }),
       });

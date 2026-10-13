@@ -16,6 +16,9 @@ import {
   EvaluationRunRepository,
   createDefaultWorkspaceSettings,
   workspaceSettingsSchema,
+  migrateLegacyWorkspaceSettings,
+  isPinnedModelRevision,
+  requestedVsEffectiveSettingsSchema,
 } from '../src/index.js';
 
 describe('Fase 03 — Storage & Settings (@speclens/db)', () => {
@@ -244,6 +247,21 @@ describe('Fase 03 — Storage & Settings (@speclens/db)', () => {
       expect(settingsRepo.get(ws.id)).toBeNull();
     });
 
+    it('deve rejeitar configurações quando lexicalEnabled e vectorEnabled estão ambos desabilitados (RAG-01)', () => {
+      const ws = workspaceRepo.create({ title: 'Both Retrieval Disabled Test' });
+      const invalid = {
+        ...createDefaultWorkspaceSettings(ws.id),
+        retrieval: {
+          lexicalEnabled: false,
+          vectorEnabled: false,
+          topK: 5,
+        },
+      };
+
+      expect(() => settingsRepo.save(ws.id, invalid)).toThrow(ZodError);
+      expect(settingsRepo.get(ws.id)).toBeNull();
+    });
+
     it('deve rejeitar schemaVersion diferente de 1', () => {
       const ws = workspaceRepo.create({ title: 'Version Test' });
       const invalid = {
@@ -272,6 +290,96 @@ describe('Fase 03 — Storage & Settings (@speclens/db)', () => {
 
       // get() deve validar contra o schema e falhar fechado
       expect(() => settingsRepo.get(ws.id)).toThrow(ZodError);
+    });
+
+    it('migra payload legado incompleto preservando privateMode=true e reparando retrieval inválido com avisos (RAG-01)', () => {
+      const legacyPayload = {
+        embedding: {
+          providerId: 'transformers-local',
+          modelId: 'Xenova/all-MiniLM-L6-v2',
+          revision: 'main',
+        },
+        retrieval: {
+          lexicalEnabled: false,
+          vectorEnabled: false,
+          topK: 3,
+        },
+      };
+
+      const result = migrateLegacyWorkspaceSettings(legacyPayload, 'ws-legacy');
+      expect(result.migrated).toBe(true);
+      expect(result.settings.workspaceId).toBe('ws-legacy');
+      expect(result.settings.schemaVersion).toBe(1);
+      expect(result.settings.privateMode).toBe(true);
+      expect(result.settings.retrieval.lexicalEnabled).toBe(true);
+      expect(result.settings.retrieval.vectorEnabled).toBe(false);
+      expect(result.warnings).toContain('MIGRATED_MISSING_SCHEMA_VERSION');
+      expect(result.warnings).toContain('DEFAULTED_PRIVATE_MODE_TRUE');
+      expect(result.warnings).toContain('REPAIRED_BOTH_RETRIEVAL_MODES_DISABLED');
+      expect(result.warnings).toContain('UNPINNED_MODEL_REVISION');
+    });
+
+    it('distingue revisões mutáveis de revisões fixadas e valida contrato requested vs effective (RAG-01)', () => {
+      expect(isPinnedModelRevision('main')).toBe(false);
+      expect(isPinnedModelRevision('latest')).toBe(false);
+      expect(isPinnedModelRevision('HEAD')).toBe(false);
+      expect(isPinnedModelRevision('e4f8b92c11d04a77')).toBe(true);
+
+      const requested = {
+        ...createDefaultWorkspaceSettings('ws-eff'),
+        embedding: {
+          providerId: 'transformers-local',
+          modelId: 'Xenova/bge-small-en-v1.5',
+          revision: 'rev-new-unbuilt',
+        },
+      };
+
+      // Valid degraded lexical_only effective config while rebuild is pending
+      const validDegraded = {
+        workspaceId: 'ws-eff',
+        requested,
+        effective: {
+          privateMode: true,
+          embedding: {
+            providerId: 'transformers-local',
+            modelId: 'Xenova/all-MiniLM-L6-v2',
+            revision: 'rev-old-pinned',
+            activeGenerationId: null,
+            fingerprint: null,
+            verified: false,
+          },
+          decision: requested.decision,
+          llm: {
+            ...requested.llm,
+            explanationMode: 'contract_only' as const,
+          },
+          retrieval: {
+            lexicalEnabled: true,
+            vectorEnabled: true,
+            topK: 5,
+            mode: 'lexical_only' as const,
+            degradedReason: 'INDEX_INCOMPATIBLE' as const,
+          },
+        },
+        reindexRequired: true,
+        reasonCodes: ['INDEX_INCOMPATIBLE' as const],
+      };
+
+      expect(requestedVsEffectiveSettingsSchema.safeParse(validDegraded).success).toBe(true);
+
+      // Invalid: claims hybrid retrieval while effective embedding is unverified
+      const invalidHybrid = {
+        ...validDegraded,
+        effective: {
+          ...validDegraded.effective,
+          retrieval: {
+            ...validDegraded.effective.retrieval,
+            mode: 'hybrid' as const,
+          },
+        },
+      };
+
+      expect(requestedVsEffectiveSettingsSchema.safeParse(invalidHybrid).success).toBe(false);
     });
   });
 

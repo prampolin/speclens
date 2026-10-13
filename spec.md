@@ -1,8 +1,8 @@
 # SpecLens — Product & Technical Specification
 
 **Version:** 2.0  
-**Status:** Approved specification; implementation not started  
-**Date:** 2026-10-11  
+**Status:** Approved normative specification (historical phases 01–11 implemented; Phase 12 RAG reliability remediation in progress — see [`plan.md`](./plan.md))
+**Date:** 2026-10-11 (status note updated 2026-10-12)
 **Companion:** [`plan.md`](./plan.md) and [`specs/README.md`](./specs/README.md)  
 **Principles:** local-first · private by default · provider-agnostic · contract-grounded · measurable.
 
@@ -183,6 +183,10 @@ Every vector namespace is keyed by workspace + specification version + provider/
 - Check model availability and reject cloud-routed model selections in Private Mode.
 - Avoid automatic pulls in Private Mode.
 - Expose readiness/error messages for missing models rather than making hidden requests.
+
+### 6.4 Optional conversation stages
+
+User-authorized extension (2026-10-12): workspace settings expose independent LLM and Laya switches. Both default to enabled, including legacy settings without `inference`. At least one must remain enabled. Disabling Laya skips intent classification; disabling LLM skips explanation inference and returns an explicitly labeled canonical contract response. Retrieval, hydration, citations and deterministic snippets remain available in every mode. Private Mode restrictions remain unchanged. Settings persist as optional `inference: { layaEnabled: boolean, llmEnabled: boolean }` in schema v1; changes apply to the next query without reindexing.
 
 ## 7. Persistence and settings
 

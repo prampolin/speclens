@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
       // Confirmed private mode is active on server
     }
 
+    const layaEnabled = settings.inference?.layaEnabled ?? true;
+    const llmEnabled = settings.inference?.llmEnabled ?? true;
     const signal = request.signal;
 
     // Set up SSE ReadableStream
@@ -100,24 +102,28 @@ export async function POST(request: NextRequest) {
           sendEvent({
             type: 'status',
             stage: 'classifying',
-            message: 'Classificando intenção com Decision Provider...',
+            message: layaEnabled ? 'Classificando intenção com Laya...' : 'Laya desativado. Buscando diretamente na especificação.',
           });
 
-          const decisionProvider = getDecisionProvider();
           let classifyResult;
-          try {
-            classifyResult = await decisionProvider.classify(
-              query,
-              ['search_endpoint', 'generate_code', 'explain_schema', 'compare_endpoints'],
-              signal
-            );
-          } catch (decErr: any) {
-            classifyResult = {
-              intent: 'search_endpoint',
-              confidence: null,
-              abstained: true,
-              providerId: 'fallback',
-            };
+          if (!layaEnabled) {
+            classifyResult = { intent: 'search_endpoint', confidence: null, abstained: true, providerId: 'disabled' };
+          } else {
+            const decisionProvider = getDecisionProvider();
+            try {
+              classifyResult = await decisionProvider.classify(
+                query,
+                ['search_endpoint', 'generate_code', 'explain_schema', 'compare_endpoints'],
+                signal
+              );
+            } catch (decErr: any) {
+              classifyResult = {
+                intent: 'search_endpoint',
+                confidence: null,
+                abstained: true,
+                providerId: 'fallback',
+              };
+            }
           }
 
           sendEvent({
@@ -243,68 +249,72 @@ export async function POST(request: NextRequest) {
           sendEvent({
             type: 'status',
             stage: 'explaining',
-            message: 'Gerando explicação fundamentada com Ollama...',
+            message: llmEnabled ? 'Gerando explicação fundamentada com Ollama...' : 'LLM desativado. Preparando resposta baseada no contrato OpenAPI.',
           });
 
-          const llmProvider = getWorkspaceLLMProvider(settings);
           let finalEmitted = false;
-          let fallbackReason = 'O Ollama não retornou uma resposta final válida.';
+          let fallbackReason = llmEnabled ? 'O Ollama não retornou uma resposta final válida.' : 'LLM desativado nas configurações.';
 
-          try {
-            const eventStream = llmProvider.streamExplanation(
-              {
-                query,
-                groundedOperations,
-                locale: 'pt-BR',
-              },
-              signal
-            );
+          if (llmEnabled) {
+            const llmProvider = getWorkspaceLLMProvider(settings);
 
-            for await (const event of eventStream) {
-              if (signal.aborted) break;
+            try {
+              const eventStream = llmProvider.streamExplanation(
+                {
+                  query,
+                  groundedOperations,
+                  locale: 'pt-BR',
+                },
+                signal
+              );
 
-              if (event.type === 'token') {
-                sendEvent(event as Record<string, unknown>);
-              } else if (event.type === 'final') {
-                const rawEnvelope = (event as any).envelope || (event as any).response;
-                const envelope: ResponseEnvelope = {
-                  ...rawEnvelope,
-                  sources,
-                  snippets: generatedSnippets.map((s) => ({
-                    language: s.language,
-                    label: s.label,
-                    code: s.code,
-                    validated: s.validated,
-                    validationWarnings: s.validationWarnings,
-                  })),
-                };
+              for await (const event of eventStream) {
+                if (signal.aborted) break;
 
-                const validEnvelope = responseEnvelopeSchema.parse(envelope);
-                finalEmitted = true;
-                sendEvent({
-                  type: 'final',
-                  envelope: validEnvelope,
-                  snippetsWithHtml: generatedSnippets,
-                });
-                break;
-              } else if (event.type === 'error') {
-                fallbackReason = event.message;
-                sendEvent({
-                  type: 'status',
-                  stage: 'explaining',
-                  message: `Aviso IA (${event.code}): ${event.message} Resposta baseada no contrato OpenAPI.`,
-                });
-              } else if (event.type === 'status') {
-                sendEvent(event as Record<string, unknown>);
+                if (event.type === 'token') {
+                  sendEvent(event as Record<string, unknown>);
+                } else if (event.type === 'final') {
+                  const rawEnvelope = (event as any).envelope || (event as any).response;
+                  const envelope: ResponseEnvelope = {
+                    ...rawEnvelope,
+                    sources,
+                    snippets: generatedSnippets.map((s) => ({
+                      language: s.language,
+                      label: s.label,
+                      code: s.code,
+                      validated: s.validated,
+                      validationWarnings: s.validationWarnings,
+                    })),
+                  };
+
+                  const validEnvelope = responseEnvelopeSchema.parse(envelope);
+                  finalEmitted = true;
+                  sendEvent({
+                    type: 'final',
+                    envelope: validEnvelope,
+                    snippetsWithHtml: generatedSnippets,
+                  });
+                  break;
+                } else if (event.type === 'error') {
+                  fallbackReason = event.message;
+                  sendEvent({
+                    type: 'status',
+                    stage: 'explaining',
+                    message: `Aviso IA (${event.code}): ${event.message} Resposta baseada no contrato OpenAPI.`,
+                  });
+                } else if (event.type === 'status') {
+                  sendEvent(event as Record<string, unknown>);
+                }
               }
+            } catch {
+              fallbackReason = 'A resposta final do Ollama não passou na validação.';
+              sendEvent({
+                type: 'status',
+                stage: 'explaining',
+                message: `${fallbackReason} Resposta baseada no contrato OpenAPI.`,
+              });
             }
-          } catch {
-            fallbackReason = 'A resposta final do Ollama não passou na validação.';
-            sendEvent({
-              type: 'status',
-              stage: 'explaining',
-              message: `${fallbackReason} Resposta baseada no contrato OpenAPI.`,
-            });
+
           }
 
           // If final event wasn't emitted (e.g., Ollama was offline), synthesize a grounded schema-valid final envelope

@@ -2,8 +2,8 @@
 
 **Version:** 3.0
 **Date:** 2026-10-12
-**Status:** Planning only; implementation has not started.
-**Current workstream:** Phase 12 — RAG reliability. RAG-01 is the first pending task.
+**Status:** In progress — RAG-01 completed; RAG-02 through RAG-09 pending.
+**Current workstream:** Phase 12 — RAG reliability. RAG-02 is the next pending task.
 **Contract:** [spec.md](./spec.md), [AGENTS.md](./AGENTS.md), [SKILL.md](./SKILL.md).
 **Execution checklist:** [specs/12-rag-reliability.md](./specs/12-rag-reliability.md).
 
@@ -313,6 +313,21 @@ Phase 12 closes only after all task gates and these checks pass:
 | Date | Work | Status | Evidence |
 |---|---|---|---|
 | 2026-10-12 | Source inspection and corrective planning | Documentation only | Upload/chat routes, embedding providers/indexers, persistence, settings, prompt, tests and provisioning inspected |
-| Pending | RAG-01 through RAG-09 | NOT EXECUTED (NÃO EXECUTADO) | Implementation and automated runtime validation are outside this planning-only change |
+| 2026-10-12 | RAG-01 — Contracts, ownership guards & regression fixtures | PASS | Pre-fix regression captured (exit 1); contracts/fixtures implemented; 7 Vitest suites (74 tests) PASS (exit 0); `tsc --noEmit` across `db`, `ai-core`, `web` PASS (exit 0) |
+| Pending | RAG-02 through RAG-09 | NOT EXECUTED (NÃO EXECUTADO) | Runtime embedding inference, SQLite vector persistence, durable ingestion, retrieval isolation, context budget, UI status and offline gates remain pending |
 
-**Next task:** RAG-01. No implementation has started and no new completion box is checked. This plan introduces automated tests as explicit deliverables; it does not claim those tests already exist or pass.
+**Next task:** RAG-02. Only RAG-01 contracts, ownership guards, and regression fixtures are complete; no runtime feature or Phase 12 exit gate is claimed complete.
+
+### Diretrizes visuais — 2026-10-12
+
+Criado [DESIGN.md](./DESIGN.md), a pedido do usuário, com direção visual inspirada na imagem do Codex fornecida na conversa. Escopo exclusivamente documental, complementar à Fase 12; não inicia RAG-08 nem altera gates ou dependências.
+
+Validação: Python verificou nove links locais, fences balanceados, checkboxes não marcados e whitespace do documento (PASS, exit 0). Testes de runtime e validação visual: **NÃO EXECUTADO**, pois nenhum código da aplicação mudou. Risco pendente: validar contraste, responsividade e estados reais na implementação. Defaults privados preservados; nenhuma rota ou dependência adicionada. Próximo item funcional continua RAG-01; aplicação visual exige microtarefa própria.
+
+### Microtarefa adicional — switches LLM / Laya — 2026-10-12
+
+Pedido explícito do usuário autoriza esta extensão pontual de configurações/backend/UI, relacionada a RAG-05/RAG-08, sem concluir esses itens nem avançar de fase. Dois switches em Configurações permitem só LLM, só Laya ou ambos. A escolha é persistida por workspace; ausência do campo mantém ambos ligados. Ambos desligados são rejeitados. Laya desligado pula classificação; LLM desligado entrega resposta contratual identificada. Busca, fontes, snippets e `privateMode=true` preservados; sem reindexação.
+
+Validação: cinco suítes Vitest, 61 testes PASS (exit 0); typecheck db/ai-core/web PASS; ESLint dos arquivos de implementação alterados PASS (exit 0, 12 warnings preexistentes); navegador com servidor loopback e SQLite temporário: três modos, salvar, recarregar, bloqueio do último switch e teclado PASS. Evidência visual: `output/playwright/inference-switches.png`. Testes da API usam provedores locais simulados e verificam ausência de fetch e de chamadas ao provedor desativado. Reabertura do SQLite testada. Build completo e gate offline com modelos reais: NÃO EXECUTADO nesta microtarefa.
+
+Próximo item não iniciado: resolver as duas lacunas de contratos identificadas na auditoria RAG-01 antes de avançar para RAG-02. Os checklists históricos permanecem sem nova marcação; esta extensão não resolve essas lacunas.

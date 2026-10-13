@@ -172,12 +172,13 @@ export async function getProvidersReadiness(workspaceId = 'default'): Promise<{
 
   const emb = getEmbeddingProvider();
   const dec = getDecisionProvider();
-  const llm = getWorkspaceLLMProvider(resolveWorkspaceSettings(workspaceId));
+  const settings = resolveWorkspaceSettings(workspaceId);
+  const llm = getWorkspaceLLMProvider(settings);
 
   const [embReady, decReady, llmReady] = await Promise.all([
     emb.readiness().catch((e) => ({ ready: false, reason: e.message })),
-    dec.readiness().catch((e) => ({ ready: false, reason: e.message })),
-    llm.readiness().catch((e) => ({ ready: false, reason: e.message })),
+    settings.inference?.layaEnabled === false ? Promise.resolve({ ready: false, reason: 'Desativado nas configurações.' }) : dec.readiness().catch((e) => ({ ready: false, reason: e.message })),
+    settings.inference?.llmEnabled === false ? Promise.resolve({ ready: false, reason: 'Desativado nas configurações.' }) : llm.readiness().catch((e) => ({ ready: false, reason: e.message })),
   ]);
 
   const providers: ProviderStatusInfo[] = [

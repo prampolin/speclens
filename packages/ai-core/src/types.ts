@@ -105,7 +105,31 @@ export interface VectorNamespaceKey {
   modelRevision: string;
   dimensions: number;
   chunkingVersion: string;
+  implementationVersion?: string;
+  assetDigest?: string;
+  pooling?: 'mean' | 'cls' | 'none';
+  normalize?: boolean;
+  preprocessingVersion?: string;
+  operationTextVersion?: string;
+  encodingVersion?: 'float32_le_v1';
 }
+
+export type {
+  JobLifecycleState,
+  LexicalCapabilityState,
+  VectorCapabilityState,
+  EffectiveRetrievalMode,
+  ExplanationMode,
+  RagReasonCode,
+  EmbeddingPoolingMode,
+  VectorEncodingVersion,
+  VectorGenerationStatus,
+  EmbeddingSpaceSpec,
+  VectorGenerationIdentity,
+  SpecificationCapabilityDto,
+  RequestedVsEffectiveSettings,
+  LegacySettingsMigrationResult,
+} from '@speclens/db';
 
 export interface SourceCitation {
   specificationId: string;
@@ -144,6 +168,7 @@ export type ExplanationEvent =
   | { type: 'error'; code: string; message: string; recoverable: boolean };
 
 export interface WorkspaceSettings {
+  inference?: { layaEnabled: boolean; llmEnabled: boolean };
   schemaVersion: number;
   workspaceId: string;
   privateMode: boolean;
