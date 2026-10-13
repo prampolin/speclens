@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Starts SpecLens after dependencies have been provisioned explicitly.
+# First run provisions locked dependencies and the default local model after a
+# visible confirmation. Subsequent starts run without registry access.
 set -uo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,6 +12,22 @@ OLLAMA_PID=""
 STARTUP_ATTEMPTS="${SPECLENS_OLLAMA_STARTUP_ATTEMPTS:-10}"
 
 log() { printf '%s\n' "$*"; }
+
+confirm_provision() {
+  local prompt="$1"
+  if [ "${SPECLENS_AUTO_PROVISION:-0}" = 1 ]; then
+    return 0
+  fi
+  if [ ! -t 0 ]; then
+    log "AVISO: execução sem terminal interativo; provisionamento automático desativado."
+    log "       Para permitir downloads explicitamente em automação, defina SPECLENS_AUTO_PROVISION=1."
+    return 1
+  fi
+  printf '%s [y/N] ' "$prompt"
+  local answer
+  read -r answer
+  [[ "$answer" =~ ^([yY]|[yY][eE][sS]|[sS]|[sS][iI][mM])$ ]]
+}
 
 cleanup() {
   status=$?
@@ -35,8 +52,15 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 if [ ! -d "$ROOT_DIR/node_modules" ]; then
-  log "ERRO: dependências não provisionadas. Execute 'bash scripts/provision-offline.sh' antes de './start.sh'."
-  exit 1
+  log "Primeira execução: será necessário instalar as dependências travadas pelo pnpm-lock.yaml."
+  if ! confirm_provision "Instalar dependências agora? Isso acessará o registry npm/pnpm."; then
+    log "ERRO: dependências ausentes. Execute 'bash scripts/provision-offline.sh' ou aceite o provisionamento inicial."
+    exit 1
+  fi
+  if ! pnpm install --frozen-lockfile; then
+    log "ERRO: não foi possível instalar as dependências."
+    exit 1
+  fi
 fi
 
 # Match the backend's Private Mode allowlist before making a local readiness request.
@@ -81,7 +105,9 @@ if [ "$OLLAMA_READY" -eq 0 ] && [ "$HAS_CURL" -eq 1 ]; then
     log "Ollama não responde em $OLLAMA_BASE_URL; iniciando serviço local."
     # Ollama reads OLLAMA_HOST when serving. Preserve the selected loopback host.
     OLLAMA_HOST="${OLLAMA_BASE_URL#http://}"
-    export OLLAMA_HOST
+    OLLAMA_MODELS="${OLLAMA_MODELS:-$ROOT_DIR/models/ollama/models}"
+    export OLLAMA_HOST OLLAMA_MODELS
+    mkdir -p "$OLLAMA_MODELS"
     ollama serve >/dev/null 2>&1 &
     OLLAMA_PID=$!
 
@@ -107,7 +133,8 @@ elif [ "$OLLAMA_READY" -eq 0 ] && [ "$HAS_CURL" -eq 0 ]; then
 fi
 
 if [ "$OLLAMA_READY" -eq 1 ]; then
-  if ! printf '%s' "$OLLAMA_TAGS" | node --input-type=module -e '
+  model_is_installed() {
+    printf '%s' "$1" | node --input-type=module -e '
     let body = "";
     for await (const chunk of process.stdin) body += chunk;
     const target = process.argv[1].toLowerCase();
@@ -120,9 +147,23 @@ if [ "$OLLAMA_READY" -eq 1 ]; then
       return normalized.toLowerCase() === target;
     });
     process.exit(matches ? 0 : 1);
-  ' "$MODEL_TO_CHECK"; then
-    log "AVISO: Ollama está ativo, mas o modelo bootstrap '$OLLAMA_MODEL_ID' não está instalado."
-    log "       Nenhum pull será iniciado. Provisione o modelo explicitamente e use readiness por workspace."
+  ' "$MODEL_TO_CHECK"
+  }
+  if ! model_is_installed "$OLLAMA_TAGS"; then
+    log "Ollama está ativo, mas o modelo bootstrap '$OLLAMA_MODEL_ID' não está instalado."
+    if command -v ollama >/dev/null 2>&1 && confirm_provision "Baixar '$OLLAMA_MODEL_ID' do registry oficial do Ollama? Os documentos do SpecLens não serão enviados."; then
+      if OLLAMA_HOST="${OLLAMA_BASE_URL#http://}" ollama pull "$OLLAMA_MODEL_ID"; then
+        if OLLAMA_TAGS="$(curl --silent --show-error --fail --max-time 10 "$OLLAMA_BASE_URL/api/tags" 2>/dev/null)" && model_is_installed "$OLLAMA_TAGS"; then
+          log "Modelo '$OLLAMA_MODEL_ID' provisionado e verificado."
+        else
+          log "AVISO: o pull terminou, mas o modelo ainda não aparece em /api/tags; SpecLens iniciará em modo degradado."
+        fi
+      else
+        log "AVISO: pull do modelo falhou; SpecLens iniciará em modo degradado."
+      fi
+    else
+      log "       Modelo não baixado; SpecLens iniciará em modo degradado. Provisione-o antes de consultar o LLM."
+    fi
   else
     log "Ollama pronto em $OLLAMA_BASE_URL com o modelo bootstrap '$OLLAMA_MODEL_ID'."
   fi

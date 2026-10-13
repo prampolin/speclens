@@ -49,9 +49,13 @@
 - **Fail Closed em Settings:** O schema Zod valida configurações tanto na escrita quanto na leitura de inicialização (`get`), impedindo que dados corrompidos ou com `privateMode` violado passem despercebidos.
 - **Isolamento de Workspaces:** Cascata configurada via foreign keys com `ON DELETE CASCADE` e `PRAGMA foreign_keys = ON`, além de queries FTS5 com filtro de workspace `JOIN specifications s ON s.id = o.specification_id WHERE s.workspace_id = ?`.
 
+## Revalidação OLL-07 — 2026-10-12
+
+O E2E automatizado usou banco SQLite temporário e confirmou que os modelos escolhidos na UI foram persistidos e recebidos pelo provider Ollama falso em duas consultas consecutivas sem reinício do servidor. Também confirmou `privateMode=true`. `bash scripts/test-ollama-e2e.sh` — **PASS, 1/1**. A jornada e suas limitações estão descritas em [ollama-corrections.md](./ollama-corrections.md).
+
 ## Gate de saída
 
 - [x] Todas as tarefas P0 desta fase concluídas.
 - [x] Testes indicados executados e resultados registrados (19 testes unitários e de integração em `@speclens/db`).
 - [x] Checagens de privacidade aprovadas (`privateMode=true` padrão inalterado).
-- [ ] `plan.md` atualizado com a fase finalizada.
+- [x] `plan.md` atualizado com a fase finalizada.

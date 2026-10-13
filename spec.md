@@ -236,7 +236,7 @@ Settings must be **validated on write AND on startup**, migrated with explicit s
 
 **PM-003 — Provider validation:** validate both manifest and actual runtime configuration. A loopback host does not prove locality if the process proxies to the internet. Unknown/custom providers need verified local capability and explicit approval/policy.
 
-**PM-004 — Import guard:** default upload-only file import; cap file size, references, recursion depth and parse time. Disallow remote `$ref` in Private Mode. If URL import is enabled in another mode, block SSRF, private/metadata IPs and redirects to forbidden networks.
+**PM-004 — Import guard:** default upload-only file import; uploads have no application byte-size cap (user-requested revision, 2026-10-12); retain reference, recursion-depth and parse-time guards. Large imports remain constrained by available memory and storage. Disallow remote `$ref` in Private Mode. If URL import is enabled in another mode, block SSRF, private/metadata IPs and redirects to forbidden networks.
 
 **PM-005 — Logs:** redact Authorization, API keys, cookies, user prompts and sensitive specification contents. Record operational metadata only, with telemetry disabled by default.
 
@@ -321,7 +321,7 @@ Schema examples are illustrative only. The real response must be Zod-validated s
 
 | Method | Endpoint | Purpose | Key conditions |
 |---|---|---|---|
-| `POST` | `/api/specifications` | Upload/import document | Local file, size/parser limits, workspace validation |
+| `POST` | `/api/specifications` | Upload/import document | Local file, no upload byte cap, parser guards, workspace validation |
 | `GET` | `/api/specifications` | List/version status | Current workspace only |
 | `GET` | `/api/operations/:id` | Inspect normalized source | Must belong to workspace/spec version |
 | `POST` | `/api/chat` | Classify, retrieve, explain, generate | Policy check before providers/IO; streaming option |

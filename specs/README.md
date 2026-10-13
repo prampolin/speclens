@@ -15,6 +15,7 @@ Cada arquivo é um roteiro operacional complementar à especificação normativa
 | 09 | [Chat, Settings e UI final](./09-chat-ui.md) |
 | 10 | [Privacidade, segurança e benchmarks](./10-security-evals.md) |
 | 11 | [Packaging e release local](./11-release.md) |
+| 12 | [RAG Reliability — planned](./12-rag-reliability.md) |
 
 ## Regra de atualização
 Registre na seção Evidências os comandos e os resultados reais. Se o teste não rodar, identifique como **NÃO EXECUTADO**. Não altere o status de outra fase sem completar o gate da fase atual.

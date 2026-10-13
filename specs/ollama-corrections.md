@@ -1,6 +1,6 @@
 # Plano de correções — Ollama local
 
-**Estado:** OLL-01 a OLL-05 concluídas; OLL-06 parcialmente implementada, mas sem validação Docker real; OLL-07 pendente.  
+**Estado:** OLL-01 a OLL-07 concluídas em 2026-10-12; jornadas mockada e real registradas abaixo.
 **Origem:** diagnóstico local de 2026-10-11.  
 **Escopo:** correções das fases 03, 07, 09, 10 e 11; não constitui avanço automático de fase.  
 **Contrato:** [spec.md](../spec.md), especialmente §§6.3, 7, 8 e FR-012/013/014/017.  
@@ -133,6 +133,7 @@ O [plan.md](../plan.md) declara todas as fases concluídas, mas esses comportame
 - [x] Iniciar serviço local ausente quando CLI disponível, com espera limitada e mensagem acionável em caso de falha.
 - [x] Encerrar apenas processo criado pelo script, preservando serviço que já estava ativo.
 - [x] Documentar o comando único de execução após provisionamento e o comportamento degradado sem modelo.
+- [x] No primeiro `./start.sh`, oferecer instalação lockfile-pinned e pull do modelo bootstrap com confirmação explícita; downloads nunca ocorrem silenciosamente ou em execução não interativa.
 
 **Harness proposto:** executar o script com diretório temporário, PATH controlado e executáveis falsos para `ollama`, `curl`, `pnpm` e demais dependências efetivamente chamadas. Isolar a preparação de dependências para não instalar pacotes nem iniciar serviços reais durante a suíte.
 
@@ -156,16 +157,16 @@ O [plan.md](../plan.md) declara todas as fases concluídas, mas esses comportame
 - [x] Não resolver liberando qualquer hostname, aceitando manifestos como prova ou desativando Private Mode.
 - [x] Bloquear redirecionamentos para destinos não permitidos e validar configuração do modelo antes de enviar documentos à inferência; readiness isolado não substitui o guard do caminho de geração.
 - [x] Configurar rede sem egress externo na execução privada, exposição da UI apenas no host local e modelos previamente provisionados.
-- [ ] Usar projeto Compose e volumes temporários exclusivos para testes; nunca derrubar a instalação do usuário (script implementado; execução real pendente).
+- [x] Usar projeto Compose e volumes temporários exclusivos para testes; nunca derrubar a instalação do usuário.
 
 **Casos obrigatórios:**
 
 - [x] Teste unitário bloqueia host remoto, porta fora da allowlist, redirect externo e modelo cloud/proxy antes de enviar contexto.
 - [x] `docker compose config --quiet` valida a configuração final.
-- [ ] Smoke automatizado com imagens e pesos já presentes sobe serviços com pulls/builds de rede desabilitados e confirma geração local (script concluído; bloqueado no pré-requisito da imagem local Ollama).
-- [ ] Verificação de rede registra ausência de egress externo durante consulta fictícia; tentativa de saída controlada é bloqueada.
-- [ ] Falha do Ollama no ambiente isolado produz erro específico sem fallback de rede (teste unitário passou; cenário Docker ainda não executado).
-- [ ] Teardown do script remove apenas recursos do projeto temporário, inclusive se o smoke falhar (implementado; execução real pendente).
+- [x] Smoke automatizado com imagens e pesos já presentes sobe serviços com pulls/builds de rede desabilitados e confirma geração local.
+- [x] Verificação de rede confirma ausência de rota default, TX restrito às interfaces privadas e bloqueio de tentativa de saída controlada.
+- [x] Falha do Ollama no ambiente isolado produz erro específico sem fallback de rede.
+- [x] Teardown do script remove apenas recursos do projeto temporário, inclusive após falha do smoke.
 
 **Aceite:** Docker funcional e isolamento comprovado. Mock do transporte sozinho não satisfaz este gate.
 
@@ -173,15 +174,15 @@ O [plan.md](../plan.md) declara todas as fases concluídas, mas esses comportame
 
 **Dependência:** OLL-01 a OLL-06.  
 **Arquivos existentes:** `apps/web/playwright.config.ts`, `apps/web/e2e/foundation.spec.ts`, `scripts/smoke-test.sh`.  
-**Novos arquivos propostos:** `apps/web/e2e/ollama-settings.spec.ts`, `scripts/test-ollama-local.sh`.
+**Novos arquivos:** `apps/web/e2e/ollama-settings.spec.ts`, `scripts/ollama-e2e-fake.mjs`, `scripts/test-ollama-e2e.sh`, `scripts/test-ollama-local.sh`.
 
-- [ ] Criar E2E com servidor Ollama falso local, banco temporário e porta exclusiva; impedir reutilização acidental do servidor pessoal via `reuseExistingServer`.
-- [ ] Importar fixture fictícia, escolher modelo, salvar, consultar e verificar no servidor falso o modelo recebido.
-- [ ] Trocar o modelo pela UI, consultar novamente e confirmar atualização sem reinício.
-- [ ] Simular modelo ausente e validar diagnóstico final visível, fontes e fallback.
-- [ ] Criar smoke opt-in com Ollama real e modelo já instalado: consultar o chat do SpecLens e verificar tokens e final do LLM, não apenas HTTP 200 ou readiness.
-- [ ] Executar regressão, lint, build e cenários de privacidade aplicáveis.
-- [ ] Atualizar `specs/03-storage-settings.md`, `07-ollama-llm.md`, `09-chat-ui.md`, `10-security-evals.md`, `11-release.md` e `plan.md` somente com resultados efetivamente obtidos.
+- [x] Criar E2E com servidor Ollama falso local, banco temporário e portas efêmeras exclusivas; `reuseExistingServer=false` por padrão.
+- [x] Importar fixture fictícia, escolher modelo, salvar, consultar e verificar no servidor falso o modelo recebido.
+- [x] Trocar o modelo pela UI, consultar novamente e confirmar atualização sem reinício.
+- [x] Simular modelo ausente e validar diagnóstico final visível, fontes e fallback sem POST de inferência.
+- [x] Criar smoke opt-in com Ollama real e modelo já instalado: chat do SpecLens confirmou tokens e envelope final com fontes/snippets.
+- [x] Executar regressão, lint, build e cenários de privacidade aplicáveis.
+- [x] Atualizar `specs/03-storage-settings.md`, `07-ollama-llm.md`, `09-chat-ui.md`, `10-security-evals.md`, `11-release.md` e `plan.md` com os resultados obtidos.
 
 **Aceite:** integração real comprovada; testes que não rodaram permanecem identificados como pendências.
 
@@ -206,7 +207,7 @@ docker compose config --quiet
 bash scripts/test-ollama-docker.sh
 
 # OLL-07 — E2E e smoke novos propostos
-pnpm --filter web test:e2e -- ollama-settings.spec.ts
+bash scripts/test-ollama-e2e.sh
 OLLAMA_MODEL_ID=llama3.2:3b bash scripts/test-ollama-local.sh
 
 # Gate integrado após as correções
@@ -228,7 +229,7 @@ Pré-requisitos: dependências locais instaladas; Chromium pré-provisionado par
 | OLL-04 | EXECUTADO — PASS em 2026-10-11 | `pnpm exec vitest run packages/ai-core/tests/ollama-llm.test.ts` (30/30); `pnpm exec tsc --noEmit -p packages/ai-core/tsconfig.json`; `git diff --check` — PASS. Timers falsos e transporte/stream que respeitam AbortSignal. |
 | OLL-05 | EXECUTADO — PASS em 2026-10-11 | `pnpm exec vitest run tests/startup.test.ts` (7/7), `bash -n start.sh scripts/provision-offline.sh` e `git diff --check` — PASS. Harness usa PATH controlado e executáveis falsos; não instala dependências nem inicia serviços reais. |
 | OLL-06 | PARCIAL — 2026-10-11 | Provider/policy, Compose, benchmark unitário, documentação e script de smoke implementados; Docker smoke tentou executar com acesso elevado, mas parou no pré-requisito: imagem `ollama/ollama:latest` ausente localmente. Pull/build foram evitados. |
-| OLL-07 | NÃO EXECUTADO — planejamento | E2E, inferência real, regressão, lint e build |
+| OLL-07 | EXECUTADO — PASS em 2026-10-12 | E2E 1/1; smoke real 29 tokens e final com 1 fonte/3 snippets; regressão 203/203; lint sem erros; build PASS |
 
 Ao finalizar cada item, registrar arquivos alterados, decisão, resultado dos testes, riscos e próximo item. Não armazenar payloads reais nas evidências.
 
@@ -268,13 +269,13 @@ Ao finalizar cada item, registrar arquivos alterados, decisão, resultado dos te
 
 **Verificações OLL-06:** `pnpm exec vitest run packages/evals/test/security-benchmark.test.ts packages/ai-core/tests/ollama-llm.test.ts` — PASS (38/38); inclui host remoto, porta não allowlisted, redirect, metadata proxy antes do POST e erro `OLLAMA_UNAVAILABLE` sem destino alternativo. `pnpm --filter @speclens/evals typecheck` e `pnpm exec tsc --noEmit -p packages/ai-core/tsconfig.json` — PASS; `docker compose config --quiet`, `bash -n scripts/test-ollama-docker.sh` e `git diff --check` — PASS. `bash scripts/test-ollama-docker.sh` — NÃO EXECUTADO: Docker daemon acessível com elevação, mas a imagem `ollama/ollama:latest` não está local; o preflight saiu antes de criar containers/volumes e não fez pull/build. Inferência, egress runtime e teardown após subida permanecem sem evidência; OLL-06 não está aceita.
 
-**Pendências OLL-06:** disponibilizar localmente as imagens `ollama/ollama:latest` e `speclens-web` (ou configurar as tags locais), além do diretório `models/ollama` com o modelo já provisionado; então executar `bash scripts/test-ollama-docker.sh`. O script consulta `GET /api/providers` após parar somente o Ollama do projeto isolado para confirmar diagnóstico local específico, verifica egress após a inferência sintética e limpa projeto/diretórios temporários mesmo em falha. Só após execução bem-sucedida marcar OLL-06 concluída e iniciar OLL-07.
+**Pendência registrada antes da revalidação OLL-06:** disponibilizar localmente as imagens `ollama/ollama:latest` e `speclens-web` (ou configurar as tags locais), além do diretório `models/ollama` com o modelo já provisionado; então executar `bash scripts/test-ollama-docker.sh`. A revalidação abaixo confirmou o smoke e o teardown.
 
-**Próxima tarefa:** OLL-06, dependente de OLL-01 a OLL-05 concluídas.
+**Próxima tarefa (registro de 2026-10-11):** OLL-06, dependente de OLL-01 a OLL-05 concluídas; foi concluída na revalidação em 2026-10-12.
 
 ## Revisão do escopo 1–OLL-06 — 2026-10-11
 
-**Resultado:** lacunas de implementação corrigidas; OLL-06 continua PARCIAL por ausência de imagens Docker locais. OLL-07 não iniciada.
+**Resultado naquele registro (2026-10-11):** lacunas de implementação corrigidas; OLL-06 continuava PARCIAL por ausência de imagens Docker locais. OLL-07 ainda não havia iniciado.
 
 - **OLL-02:** o resolver agora valida e persiste a seleção inicial por workspace antes de retornar. Antes, a documentação afirmava persistência, mas o resolver só retornava o bootstrap; um reinício/alteração de ambiente podia mudar a seleção sem PATCH. Teste cobre alteração de ambiente após a primeira resolução. O teste de troca de modelo agora consome o stream inteiro e verifica o `model` do POST, em vez de passar só por um fetch de metadata que falhava. Readiness usa transporte mockado, sem acessar o Ollama pessoal.
 - **OLL-03:** configuração privada insegura mantém código `PRIVACY_POLICY_VIOLATION` e mensagem segura no chat; primeiro final validado encerra o provider e impede finais duplicados. Corrigido o teste de HTTP 404 para responder tags válidas e simular 404 realmente em `/api/chat`. Removidos detalhes brutos de erros de transporte/schema/statusText do readiness.
@@ -293,4 +294,42 @@ Ao finalizar cada item, registrar arquivos alterados, decisão, resultado dos te
 
 **Limites:** testes com Docker falso comprovam seleção do projeto, configuração isolada e caminhos de cleanup, não inferência ou isolamento real. O monitor de contadores reprova qualquer TX não-loopback durante a janela da consulta; pode reprovar tráfego incidental e não substitui auditoria geral do host. Build e E2E da OLL-07 não foram executados nesta revisão. Não foi alterado `privateMode=true`, nem executada API documentada.
 
-**Próximo item:** provisionar explicitamente imagens/pesos fora da execução privada e rodar `bash scripts/test-ollama-docker.sh`; só então reavaliar os checkboxes runtime de OLL-06. Downloads continuam fora deste escopo.
+**Próximo item (registro histórico de 2026-10-11):** provisionar imagens/pesos e rodar o smoke Docker. Essa pendência foi concluída na revalidação OLL-06 de 2026-10-12, registrada abaixo.
+
+## OLL-07 — Jornada automatizada e atualização das evidências — 2026-10-12
+
+**Resultado:** concluída. O E2E passou com servidor Ollama falso, SQLite temporário, porta exclusiva para o mock e porta exclusiva do Next.js. A configuração do Playwright não reutiliza serviços existentes por padrão. A jornada importou uma OpenAPI sintética, salvou e usou os modelos A e B em consultas consecutivas sem reiniciar o app. Ao selecionar modelo ausente, a UI mostrou a limitação de fallback e a fonte OpenAPI, sem enviar POST de inferência para o modelo ausente. `privateMode=true` foi confirmado e a página não emitiu requisições externas.
+
+**Smoke Ollama real:** `OLLAMA_MODEL_ID=llama3.2:3b bash scripts/test-ollama-local.sh` — **PASS**. O script apontou para os pesos já provisionados em `models/ollama/models`, iniciou SpecLens com SQLite temporário, importou fixture sintética e validou 29 eventos de token, envelope final, uma fonte `/smoke-products` e três snippets. O daemon local foi iniciado para a execução e encerrado ao final; não houve pull ou envio de documentação real.
+
+**Regressão e gates:**
+
+- `bash scripts/test-ollama-e2e.sh` — **PASS, 1/1** (Chrome instalado; mock e app em loopback efêmero).
+- `pnpm test` — **PASS, 203/203**, 19 arquivos; inclui casos de policy, SSRF, redaction, prompt injection e Docker harness.
+- `pnpm lint` — **PASS**, zero erros, 61 warnings preexistentes.
+- `pnpm build` — **PASS**; Next.js reportou warnings de dependências dinâmicas já existentes nos providers Laya e Transformers.
+- `pnpm exec vitest run tests/startup.test.ts packages/evals/test/security-benchmark.test.ts tests/ollama-docker-script.test.ts` — **PASS, 22/22**.
+- `bash -n scripts/test-ollama-e2e.sh scripts/test-ollama-local.sh start.sh scripts/provision-offline.sh scripts/test-ollama-docker.sh`, `node --check scripts/ollama-e2e-fake.mjs` e `git diff --check` — **PASS**.
+
+**Arquivos desta microtarefa:** `apps/web/playwright.config.ts`, `apps/web/e2e/ollama-settings.spec.ts`, `apps/web/src/app/settings/page.tsx`, `apps/web/src/components/chat/{ChatArea,ChatContext}.tsx`, `apps/web/src/lib/server/providers.ts`, `scripts/{ollama-e2e-fake.mjs,test-ollama-e2e.sh,test-ollama-local.sh}`, este documento, `specs/03-storage-settings.md`, `specs/07-ollama-llm.md`, `specs/09-chat-ui.md`, `specs/10-security-evals.md`, `specs/11-release.md` e `plan.md`.
+
+**Decisões e riscos:** a allowlist de origem Ollama pode ser explicitada por `OLLAMA_ALLOWED_BASE_URLS`; `validateOllamaUrl` continua limitando destino efetivo a loopback, sem credenciais, path, query ou fragmento. A UI agora apresenta `answer.limitations` do envelope para que o fallback e seus diagnósticos sejam auditáveis. O E2E usa somente dados sintéticos. O smoke real comprova inferência e contrato, mas não substitui o monitor de egress Docker já registrado na OLL-06.
+
+**Pendências:** nenhuma para OLL-07. Nenhum teste desta tarefa ficou sem execução.
+
+## Revalidação OLL-06 — 2026-10-12
+
+**Resultado:** OLL-06 concluída. `llama3.2:3b` foi baixado explicitamente para `models/ollama`; imagens `ollama/ollama:latest` e `speclens-web:oll06` já estavam locais. Quando `start.sh` inicia seu próprio daemon, configura o armazenamento do Ollama em `./models/ollama/models`, permitindo reutilizar os pesos locais do projeto. O monitor foi ajustado após duas execuções identificarem 42 e 126 bytes em `eth0`, interface da rede Docker interna. A validação final confirmou ausência de rota default, TX somente em interface dessa rede privada e falha da tentativa externa com `ENETUNREACH`.
+
+**Evidências executadas:**
+
+- `pnpm exec vitest run packages/evals/test/security-benchmark.test.ts tests/ollama-docker-script.test.ts` — **PASS, 13/13**. Avalia policy/segurança e o harness com Docker falso; o smoke real abaixo fornece a evidência de isolamento runtime.
+- `pnpm exec vitest run tests/startup.test.ts packages/evals/test/security-benchmark.test.ts tests/ollama-docker-script.test.ts` — **PASS, 22/22**, incluindo 9 casos de startup, 8 de segurança e 5 do harness Docker isolado.
+- `pnpm lint` — **PASS**, 0 erros e 61 warnings existentes na base.
+- `docker compose config --quiet`, `bash -n scripts/test-ollama-docker.sh` e `git diff --check` — **PASS**.
+- `docker image ls` — confirmou `ollama/ollama:latest` e `speclens-web:oll06` locais; não houve pull nem build.
+- `docker run --rm --pull=never --entrypoint sh --volume "$PWD/models/ollama:/root/.ollama" ollama/ollama:latest ... ollama pull llama3.2:3b` — **PASS**; modelo de aproximadamente 2 GB baixado do registry oficial para o diretório local do projeto. Nenhum documento ou consulta foi enviado.
+- `OLLAMA_SOURCE_DIR="$PWD/models/ollama" OLLAMA_MODEL_ID=llama3.2:3b SPECLENS_WEB_IMAGE=speclens-web:oll06 bash scripts/test-ollama-docker.sh` — **PASS**: geração local concluída; sem rota default; delta TX restrito a `eth0` da rede interna; probe de egress bloqueado com `ENETUNREACH`; readiness após parar Ollama reportou erro local específico sem fallback remoto; teardown confirmou remoção do projeto temporário.
+- `ollama list` — **NÃO EXECUTADO COM SUCESSO**: serviço Ollama local do host não está rodando. O smoke real usou o daemon/container isolado e os pesos locais provisionados.
+
+**Pendência:** nenhuma para OLL-06 nem OLL-07. A nota de pendência escrita antes da execução OLL-07 foi superada pela jornada e pelas evidências registradas acima.

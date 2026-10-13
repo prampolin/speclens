@@ -57,6 +57,7 @@ export interface ChatMessage {
   }>;
   sources?: SourceCitation[];
   snippets?: SnippetItem[];
+  limitations?: string[];
   error?: {
     code: string;
     message: string;
@@ -382,6 +383,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                     content: envelope.answer.explanation || msg.content,
                     sources: envelope.sources || msg.sources,
                     snippets: event.snippetsWithHtml || envelope.snippets || msg.snippets,
+                    limitations: envelope.answer.limitations || [],
                   };
                 }
 

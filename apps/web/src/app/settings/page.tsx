@@ -423,6 +423,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
+                aria-label="Modelo Instalado Selecionado"
                 value={settings.llm.modelId}
                 disabled={isRebuilding}
                 onChange={(e) => {

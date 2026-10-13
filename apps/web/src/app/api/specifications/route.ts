@@ -17,8 +17,6 @@ import { indexOperations } from '@speclens/ai-core';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -88,17 +86,6 @@ export async function POST(request: NextRequest) {
       const fileObj = file as File;
       filename = fileObj.name || filename;
 
-      if (fileObj.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          {
-            code: 'FILE_TOO_LARGE',
-            message: `File exceeds maximum allowed size of 10MB (${fileObj.size} bytes).`,
-            retryable: false,
-          },
-          { status: 413 }
-        );
-      }
-
       fileContent = await fileObj.text();
     } else {
       // Direct raw text or JSON body
@@ -133,11 +120,11 @@ export async function POST(request: NextRequest) {
       // In privateMode, reject remote $refs
     }
 
-    // 2. Parse document with openapi-core (max size 10MB enforced)
+    // Uploads have no application byte cap; parser and reference guards still apply.
     let parsedDoc;
     try {
       parsedDoc = parseOpenAPIDocument(fileContent, {
-        maxSizeBytes: MAX_FILE_SIZE,
+        maxSizeBytes: Number.POSITIVE_INFINITY,
         filename,
       });
     } catch (parseErr: any) {

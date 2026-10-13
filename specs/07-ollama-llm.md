@@ -1,6 +1,6 @@
 # Fase 07 — Ollama e protocolo estruturado
 
-**Estado:** Concluída no registro histórico; gate runtime/air-gap pendente de revalidação OLL-06/07
+**Estado:** Concluída; gate runtime/air-gap revalidado em OLL-06/07 (2026-10-12)
 **Objetivo:** Explicação baseada em fontes, streaming validado.  
 **Dependência:** Gate aprovado da fase 06.
 
@@ -54,4 +54,8 @@
 
 ## Ressalva da revisão OLL-01–06 — 2026-10-11
 
-Os checkboxes históricos acima não comprovam integração Ollama real ou execução air-gap. A revisão em [ollama-corrections.md](./ollama-corrections.md) registra os testes reproduzidos e corrige essa distinção. Suíte focada 96/96 e regressão 200/200 PASS, com transporte/Docker mockados onde indicado. `docker compose config --quiet` PASS; smoke real parou na ausência de imagem local Ollama. Inferência, monitor de egress e teardown Docker real **NÃO EXECUTADOS**; o aceite runtime continua pendente. Nenhuma fase seguinte iniciada.
+**Nota histórica (2026-10-11):** os checkboxes originais não comprovavam integração Ollama real nem execução air-gap. Naquela revisão, inferência, monitor de egress e teardown Docker real estavam **NÃO EXECUTADOS**. Essa pendência foi resolvida em 2026-10-12: smoke Docker real OLL-06 passou com inferência e egress bloqueado, e OLL-07 passou no E2E e no smoke Ollama local. Ver evidências em [ollama-corrections.md](./ollama-corrections.md). Nenhuma fase posterior foi iniciada.
+
+### Revalidação OLL-07 — 2026-10-12
+
+O E2E com Ollama falso validou seleção/persistência de modelo e diagnóstico de modelo ausente; o smoke com `llama3.2:3b` real em pesos já instalados recebeu tokens e final com fonte e snippets. Evidências completas e os comandos estão em [ollama-corrections.md](./ollama-corrections.md). `pnpm test` — **203/203 PASS**; `pnpm build` — **PASS**.

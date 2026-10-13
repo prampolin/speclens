@@ -39,6 +39,10 @@
 | 2026-10-11 | Monorepo | `vitest run` | 132/132 pass | Suíte completa incluindo openapi-core, db, ai-core, codegen, evals, web |
 | 2026-10-11 | E2E | `pnpm --filter web test:e2e` | NÃO EXECUTADO | Sandbox sem suporte a headless browsers e portas de dev server |
 
+### Revalidação OLL-07 — 2026-10-12
+
+`bash scripts/test-ollama-e2e.sh` — **PASS, 1/1** com Chrome instalado, banco temporário e servidores em portas loopback exclusivas. Importou fixture, trocou modelo via Settings sem reiniciar, consultou novamente e mostrou fontes e observação de fallback ao selecionar modelo ausente. A UI passou a renderizar `answer.limitations` em cada resposta final para expor essa observação.
+
 ## Decisões e riscos
 
 - **Shiki Syntax Highlighting:** Utilizado com tema `github-dark-default` em SSR/API e no cliente para renderização de snippets em cURL, JavaScript (fetch) e Python, com display e cópia apenas (sem execução de código).
@@ -51,3 +55,12 @@
 - [x] Testes indicados executados e resultados registrados.
 - [x] Checagens de privacidade aprovadas.
 - [x] `plan.md` atualizado com a fase finalizada.
+
+### Ajuste de upload — 2026-10-12
+
+- [x] Removido o teto de 10 MiB da rota de importação (multipart e corpo direto), com override explícito do limite do parser somente nesse fluxo.
+- [x] Área de specs aceita arrastar/soltar, destaca o destino, informa envio/erro e preserva seleção por teclado. Um arquivo por vez; upload duplicado e envio durante indexação bloqueados.
+- [x] Validação: API + parser 25/25; segurança 8/8; E2E Chrome 1/1 com arquivo >10 MiB, extensão inválida, seletor tradicional e nenhuma requisição externa do navegador; TypeScript web PASS.
+- Decisão: pedido explícito do usuário substitui a exigência anterior de teto de bytes em PM-004; contrato e SECURITY atualizados. Parser reutilizável mantém seu limite padrão, e upload mantém proteções de referências/estrutura. privateMode=true preservado, sem nova rota ou destino de egress.
+- Risco: leitura integral em memória; arquivos grandes dependem de RAM/disco e podem falhar por recursos. Não promete tamanho fisicamente ilimitado.
+- Próximo item: nenhum iniciado; ajuste pontual após fases concluídas.

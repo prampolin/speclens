@@ -89,6 +89,16 @@ const transmitted = () => Object.fromEntries(readFileSync("/proc/net/dev", "utf8
   const [name, counters] = line.split(":");
   return [name.trim(), Number(counters.trim().split(/\s+/)[8])];
 }).filter(([name]) => name !== "lo"));
+const routes = () => readFileSync("/proc/net/route", "utf8").trim().split("\n").slice(1).map((line) => {
+  const [iface, destination, , flags] = line.trim().split(/\s+/);
+  return { iface, destination, active: (Number.parseInt(flags, 16) & 1) === 1 };
+}).filter((route) => route.active);
+const routeSnapshot = routes();
+if (routeSnapshot.some((route) => route.destination === "00000000")) {
+  throw new Error(`rota default inesperada na rede privada: ${JSON.stringify(routeSnapshot)}`);
+}
+const internalInterfaces = new Set(routeSnapshot.filter((route) => route.destination !== "00000000").map((route) => route.iface));
+if (!internalInterfaces.size) throw new Error("nenhuma rota privada foi encontrada para monitorar");
 const before = transmitted();
 if (!Object.keys(before).length) throw new Error("monitor sem interface externa ao loopback");
 const response = await fetch("http://127.0.0.1:11434/api/chat", {
@@ -110,8 +120,13 @@ if (body.done !== true || typeof body.message?.content !== "string" || !body.mes
   throw new Error("Ollama não concluiu geração local de texto.");
 }
 const after = transmitted();
-if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error("tráfego de saída não-loopback detectado durante inferência");
-console.log(`geração local concluída para ${model}; monitor /proc/net/dev: delta TX não-loopback = 0 bytes`);
+const changed = Object.entries(after).filter(([iface, bytes]) => bytes !== before[iface]);
+const outsidePrivateNetwork = changed.filter(([iface]) => !internalInterfaces.has(iface));
+if (outsidePrivateNetwork.length) {
+  throw new Error(`delta TX em interface fora da rede privada: ${JSON.stringify(outsidePrivateNetwork)}`);
+}
+if (JSON.stringify(routeSnapshot) !== JSON.stringify(routes())) throw new Error("rotas mudaram durante a inferência");
+console.log(`geração local concluída para ${model}; sem rota default; delta TX restrito às interfaces da rede interna: ${JSON.stringify(changed)}`);
 ' || fail 'geração local falhou; sem fallback de rede.'
 
 # Probe external egress while the isolated project is still running after the

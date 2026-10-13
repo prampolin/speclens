@@ -222,6 +222,15 @@ export function ChatArea() {
                 </div>
               )}
 
+              {message.limitations && message.limitations.length > 0 && (
+                <div role="status" aria-label="Limitações da resposta" className="rounded-lg border border-amber-800/70 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200">
+                  <span className="font-semibold">Observações da resposta</span>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {message.limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}
+                  </ul>
+                </div>
+              )}
+
               {/* Clickable Citations (Sources) */}
               {message.sources && message.sources.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-border/60">

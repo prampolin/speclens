@@ -38,6 +38,10 @@ export function Sidebar() {
   const [newWsTitle, setNewWsTitle] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const uploadPending = useRef(false);
+
   const methods = ['ALL', 'GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
   // Extract available tags from current active spec (if any)
@@ -46,19 +50,35 @@ export function Sidebar() {
     title: 'Workspace',
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const importFiles = async (files: File[]) => {
+    if (isIndexing || uploadPending.current || files.length === 0) return;
     setUploadError(null);
-    const result = await uploadSpecification(file);
-    if (!result.success) {
-      setUploadError(result.message || 'Falha ao importar OpenAPI');
+    if (files.length !== 1) {
+      setUploadError('Importe um arquivo por vez.');
+      return;
     }
+    const file = files[0];
+    if (!/\.(yaml|yml|json)$/i.test(file.name)) {
+      setUploadError('Selecione um arquivo .yaml, .yml ou .json.');
+      return;
+    }
+    uploadPending.current = true;
+    setIsUploading(true);
+    try {
+      const result = await uploadSpecification(file);
+      if (!result.success) setUploadError(result.message || 'Falha ao importar OpenAPI');
+    } catch {
+      setUploadError('Falha ao importar OpenAPI. Tente novamente.');
+    } finally {
+      uploadPending.current = false;
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    void importFiles(Array.from(e.target.files || []));
+    e.target.value = '';
   };
 
   const handleCreateWorkspaceSubmit = async (e: React.FormEvent) => {
@@ -205,7 +225,23 @@ export function Sidebar() {
       )}
 
       {/* Specifications list */}
-      <div className="p-3 border-b border-border flex-1 overflow-y-auto space-y-3">
+      <div
+        aria-label="Área de upload de especificações"
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = isIndexing || isUploading ? 'none' : 'copy';
+          if (!isIndexing && !isUploading) setIsDragging(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsDragging(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          void importFiles(Array.from(e.dataTransfer.files));
+        }}
+        className={`p-3 border-b border-border flex-1 overflow-y-auto space-y-3 transition ${isDragging ? 'bg-primary/10 ring-2 ring-inset ring-primary' : ''}`}
+      >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Specs Importadas ({specifications.length})
@@ -213,7 +249,7 @@ export function Sidebar() {
           <label
             title="Importar OpenAPI (.yaml, .json)"
             className={`text-xs text-primary hover:text-primary/80 flex items-center space-x-1 cursor-pointer focus-within:ring-2 focus-within:ring-primary rounded p-1 ${
-              isIndexing ? 'opacity-50 pointer-events-none' : ''
+              isIndexing || isUploading ? 'opacity-50 pointer-events-none' : ''
             }`}
           >
             <Upload className="w-3.5 h-3.5" />
@@ -223,11 +259,15 @@ export function Sidebar() {
               type="file"
               accept=".yaml,.yml,.json"
               onChange={handleFileChange}
-              disabled={isIndexing}
+              disabled={isIndexing || isUploading}
               className="sr-only"
             />
           </label>
         </div>
+
+        <p role="status" className="text-[11px] text-muted-foreground">
+          {isUploading ? 'Enviando arquivo...' : isDragging ? 'Solte o arquivo para importar' : 'Arraste um arquivo .yaml, .yml ou .json aqui ou clique em Upload.'}
+        </p>
 
         {uploadError && (
           <div

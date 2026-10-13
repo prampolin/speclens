@@ -53,15 +53,16 @@ SpecLens transforms OpenAPI specifications (3.0, 3.1, and Swagger 2.0) into an i
 
 ## Quick Start — Comando Único 🚀
 
-Execute o provisionamento explícito antes de desconectar a rede: ele instala as dependências travadas pelo lockfile. Provisione também o modelo Ollama desejado com `ollama pull <model>`. Depois disso, o SpecLens inicia com um comando. A inicialização não instala pacotes, baixa modelos nem acessa registries. Se Ollama ou o modelo selecionado estiver ausente, o app sobe em modo degradado e informa a causa; cada modelo selecionado por workspace é verificado quando usado.
+Com Node.js, pnpm e Ollama instalados, clone o projeto e rode `./start.sh`. Na primeira execução, o script informa cada download e pede confirmação para instalar as dependências travadas pelo lockfile e baixar o modelo padrão `llama3.2:3b`. Os documentos e consultas do SpecLens não são enviados ao baixar dependências ou pesos. Depois do provisionamento, os próximos inícios não acessam registries. Se você recusar ou estiver sem rede, o app inicia em modo degradado sem baixar nada.
 
 ```bash
 git clone https://github.com/vitorprampolin/speclens.git
 cd speclens
-bash scripts/provision-offline.sh
 ./start.sh
 # ou: pnpm start
 ```
+
+O primeiro uso requer confirmação no terminal para downloads. Para automação, `SPECLENS_AUTO_PROVISION=1 ./start.sh` autoriza explicitamente os downloads iniciais. Para preparar a máquina antes de desconectar, use `bash scripts/provision-offline.sh` e baixe o modelo escolhido com `ollama pull <model>`.
 
 Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
@@ -138,7 +139,7 @@ are stored elsewhere.
 
 SpecLens is designed to remain completely operational when disconnected from the internet:
 
-1. Follow the **Provisioning** step while connected (`bash scripts/provision-offline.sh`) and explicitly provision the desired Ollama model (`ollama pull <model>`). Runtime startup does not install npm dependencies or models.
+1. While connected, start once with `./start.sh` and confirm dependency/model provisioning, or run `bash scripts/provision-offline.sh` and `ollama pull <model>` explicitly.
 2. Disconnect your machine from the network (disable Wi-Fi / unplug ethernet).
 3. Start the application (`./start.sh` or `docker compose up -d`).
 4. Upload an OpenAPI specification, search endpoints, and execute queries.
@@ -157,8 +158,8 @@ SpecLens is designed to remain completely operational when disconnected from the
 
 ## Troubleshooting
 
-- **Ollama connection refused**: Ensure Ollama is running (`ollama serve`) and accessible at the configured `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`).
-- **Missing model error**: Check the exact selected model tag with `ollama list`; provision it explicitly with `ollama pull <model>` while connected, then retry. SpecLens never pulls models during startup.
+- **Ollama connection refused**: Ensure Ollama is installed and accessible at the configured `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`). `./start.sh` starts the local service if needed.
+- **Missing model error**: `./start.sh` offers to download the bootstrap model on first use. To select another model, use `OLLAMA_MODEL_ID=<model> ./start.sh` or download it explicitly with `ollama pull <model>`; workspace selections are checked independently.
 - **Database lock or permission issues**: Ensure the user running the process has write permissions to `./data` and `./models`.
 - **Reindexing needed**: When switching embedding models or vector dimensionality in workspace settings, initiate a reindex from the UI settings panel.
 

@@ -1,6 +1,6 @@
 # Fase 11 — Packaging e release local
 
-**Estado:** Concluída no registro histórico; gate runtime/air-gap pendente de revalidação OLL-06/07
+**Estado:** Concluída; gate runtime/air-gap revalidado em OLL-06/07 (2026-10-12)
 **Objetivo:** Instalação reproduzível e documentação.  
 **Dependência:** Gate aprovado da fase 10.
 
@@ -56,4 +56,12 @@
 
 ## Ressalva da revisão OLL-01–06 — 2026-10-11
 
-Os checkboxes históricos acima não comprovam integração Ollama real ou execução air-gap. A revisão em [ollama-corrections.md](./ollama-corrections.md) registra os testes reproduzidos e corrige essa distinção. Suíte focada 96/96 e regressão 200/200 PASS, com transporte/Docker mockados onde indicado. `docker compose config --quiet` PASS; smoke real parou na ausência de imagem local Ollama. Inferência, monitor de egress e teardown Docker real **NÃO EXECUTADOS**; o aceite runtime continua pendente. Nenhuma fase seguinte iniciada.
+**Nota histórica (2026-10-11):** os checkboxes originais não comprovavam integração Ollama real nem execução air-gap. Naquela revisão, inferência, monitor de egress e teardown Docker real estavam **NÃO EXECUTADOS**. Essa pendência foi resolvida em 2026-10-12: OLL-06 passou no smoke Docker real, incluindo inferência, bloqueio de egress e teardown; OLL-07 passou no E2E e no smoke local. Ver evidências em [ollama-corrections.md](./ollama-corrections.md). Nenhuma fase posterior foi iniciada.
+
+### Revalidação 2026-10-12
+
+`./start.sh` agora oferece provisionamento inicial confirmado das dependências travadas e do modelo padrão `llama3.2:3b`; execução sem terminal não baixa artefatos sem `SPECLENS_AUTO_PROVISION=1`. O smoke Docker OLL-06 foi executado com imagens/pesos locais e passou em inferência, bloqueio de egress e teardown. Naquele ponto da execução, OLL-07 ainda não havia sido executada; a revalidação seguinte fechou essa etapa.
+
+### Revalidação OLL-07 — 2026-10-12
+
+`bash scripts/test-ollama-e2e.sh` — **PASS, 1/1**. `OLLAMA_MODEL_ID=llama3.2:3b bash scripts/test-ollama-local.sh` — **PASS**: 29 eventos de token e envelope final contendo fonte sintética e três snippets. O script usa banco/porta temporários, exige Ollama e modelo já instalados e encerra sem pull quando o pré-requisito local está ausente. Regressão, lint e build passaram; detalhes em [ollama-corrections.md](./ollama-corrections.md). OLL-07 concluída.

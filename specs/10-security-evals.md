@@ -1,6 +1,6 @@
 # Fase 10 — Privacidade, segurança e benchmarks
 
-**Estado:** Concluída no registro histórico; gate runtime/air-gap pendente de revalidação OLL-06/07
+**Estado:** Concluída; gate runtime/air-gap revalidado em OLL-06/07 (2026-10-12)
 **Objetivo:** Modo privado com provas negativas de vazamento.  
 **Dependência:** Gate aprovado da fase 09.
 
@@ -53,7 +53,11 @@
 - [x] Checagens de privacidade aprovadas.
 - [x] `plan.md` atualizado com a fase finalizada.
 
+## Revalidação OLL-07 — 2026-10-12
+
+`pnpm test` — **203/203 PASS** (19 arquivos), incluindo os cenários offline/air-gap, prompt injection, redaction, SSRF e policy. O E2E confirma `privateMode=true` e zero requisições externas da página enquanto usa o Ollama falso em loopback. O smoke real utilizou só fixture sintética e destino loopback; para a evidência de bloqueio de egress em runtime Docker, ver OLL-06 em [ollama-corrections.md](./ollama-corrections.md).
+
 
 ## Ressalva da revisão OLL-01–06 — 2026-10-11
 
-Os checkboxes históricos acima não comprovam integração Ollama real ou execução air-gap. A revisão em [ollama-corrections.md](./ollama-corrections.md) registra os testes reproduzidos e corrige essa distinção. Suíte focada 96/96 e regressão 200/200 PASS, com transporte/Docker mockados onde indicado. `docker compose config --quiet` PASS; smoke real parou na ausência de imagem local Ollama. Inferência, monitor de egress e teardown Docker real **NÃO EXECUTADOS**; o aceite runtime continua pendente. Nenhuma fase seguinte iniciada.
+**Nota histórica (2026-10-11):** os checkboxes originais não comprovavam integração Ollama real nem execução air-gap. Naquela revisão, inferência, monitor de egress e teardown Docker real estavam **NÃO EXECUTADOS**. Essa pendência foi resolvida em 2026-10-12: smoke Docker real OLL-06 passou com inferência e egress bloqueado; OLL-07 revalidou a jornada privada com fixture sintética. Ver evidências em [ollama-corrections.md](./ollama-corrections.md). Nenhuma fase posterior foi iniciada.

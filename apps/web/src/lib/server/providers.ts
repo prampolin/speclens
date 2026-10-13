@@ -64,6 +64,13 @@ let decisionProviderInstance: DecisionProvider = {
 };
 
 const defaultOllamaBaseUrl = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434';
+const configuredOllamaAllowlist = process.env.OLLAMA_ALLOWED_BASE_URLS
+  ?.split(',')
+  .map((url) => url.trim())
+  .filter(Boolean);
+const ollamaAllowedBaseUrls = configuredOllamaAllowlist?.length
+  ? configuredOllamaAllowlist
+  : ['http://127.0.0.1:11434', 'http://localhost:11434'];
 
 export function resolveWorkspaceSettings(workspaceId: string): WorkspaceSettings {
   const repository = new SettingsRepository(getDatabase());
@@ -86,12 +93,13 @@ export function createWorkspaceLLMProvider(settings: WorkspaceSettings): LLMProv
   if (settings.llm.providerId !== 'ollama-local') {
     throw new Error(`Unsupported LLM provider: ${settings.llm.providerId}`);
   }
-  validateOllamaUrl(defaultOllamaBaseUrl, settings.privateMode);
+  validateOllamaUrl(defaultOllamaBaseUrl, settings.privateMode, ollamaAllowedBaseUrls);
   if (settings.privateMode && isCloudBackedModelId(settings.llm.modelId)) {
     throw new PrivacyViolationError('Cloud-backed Ollama models are not allowed in Private Mode.');
   }
   return new OllamaLLMProvider({
     baseUrl: defaultOllamaBaseUrl,
+    allowedBaseUrls: ollamaAllowedBaseUrls,
     modelId: settings.llm.modelId,
     privateMode: settings.privateMode,
     timeoutMs: 30000,

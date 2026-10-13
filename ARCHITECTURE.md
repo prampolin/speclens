@@ -79,7 +79,7 @@ SpecLens is a modular monorepo engineered for offline, private, and deterministi
 - **Strict Network Isolation**: In Private Mode, no network calls are initiated to remote servers, external CDNs, remote font providers, or cloud AI endpoints. Docker Compose uses an `internal: true` network with no external route.
 - **Loopback Enforcement**: Ollama calls are restricted to the explicit loopback allowlist. In Compose, the web container shares Ollama's network namespace and uses `127.0.0.1`; the Ollama API is not published to the host.
 - **Redirect and Model Checks**: Ollama requests disable redirect following. Before each generation, the runtime model list is fetched and the exact selected model's metadata is checked for cloud/proxy routing before any specification context is sent.
-- **No Implicit Downloads**: If a requested local model or vector index is missing, the system emits an explicit readiness error instead of attempting an automatic download.
+- **User-Confirmed First-Run Provisioning**: `./start.sh` may offer to install lockfile-pinned dependencies and fetch the bootstrap model after a direct confirmation in an interactive terminal. Non-interactive runs do not download unless `SPECLENS_AUTO_PROVISION=1` is explicitly set. This provisions software/model artifacts only; user documents and queries are never part of these requests. Missing workspace-specific models still produce readiness errors unless explicitly provisioned.
 - **Index Migration Invariant**: When an embedding model, revision, or chunking configuration is altered, existing indices are preserved and a new namespace is indexed independently. Vectors from distinct spaces are never cross-compared.
 
 ---

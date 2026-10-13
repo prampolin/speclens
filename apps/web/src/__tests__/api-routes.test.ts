@@ -230,6 +230,22 @@ describe('Fase 09 — API Routes Vitest Unit Tests', () => {
   });
 
   describe('POST /api/specifications', () => {
+    it.each(['multipart', 'raw'])('accepts an upload above 10 MiB via %s', async (mode) => {
+      const content = JSON.stringify({
+        openapi: '3.0.3',
+        info: { title: 'Large local fixture', version: '1.0.0' },
+        paths: {},
+        'x-padding': 'x'.repeat(10 * 1024 * 1024),
+      });
+      const form = new FormData();
+      form.set('file', new File([content], 'large.json', { type: 'application/json' }));
+      const response = await specsPost(new NextRequest('http://localhost/api/specifications', {
+        method: 'POST', body: mode === 'multipart' ? form : content,
+      }));
+      expect(response.status).toBe(200);
+      expect((await response.json()).title).toBe('Large local fixture');
+    });
+
     it('deve rejeitar arquivo inválido com erro acionável', async () => {
       const req = new NextRequest('http://localhost:3000/api/specifications', {
         method: 'POST',

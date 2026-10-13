@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync, copyFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -12,13 +12,19 @@ function makeHarness(options: {
   models?: string[];
   includeOllama?: boolean;
   terminateOnDev?: boolean;
+  dependencies?: boolean;
 } = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'speclens-startup-'));
+  const root = path.join(dir, 'repo');
+  mkdirSync(root);
+  mkdirSync(path.join(root, 'scripts'));
+  copyFileSync(path.join(repoRoot, 'start.sh'), path.join(root, 'start.sh'));
   tempDirs.push(dir);
   const bin = path.join(dir, 'bin');
   mkdirSync(bin);
-  mkdirSync(path.join(dir, 'node_modules'));
+  if (options.dependencies !== false) mkdirSync(path.join(root, 'node_modules'));
   const state = path.join(dir, 'service-active');
+  const modelState = path.join(dir, 'installed-models.json');
   const calls = path.join(dir, 'calls.log');
   if (options.active) writeFileSync(state, 'preexisting');
 
@@ -31,17 +37,23 @@ function makeHarness(options: {
   addCommand('curl', `printf '%s\\n' "$*" >> "$FAKE_CALLS"
 if [ ! -f "$FAKE_STATE" ]; then exit 7; fi
 if [ "$FAKE_NEVER_READY" = 1 ]; then exit 7; fi
-printf '%s' "$FAKE_MODELS"`);
+if [ -f "$FAKE_MODEL_STATE" ]; then cat "$FAKE_MODEL_STATE"; else printf '%s' "$FAKE_MODELS"; fi`);
   if (options.includeOllama !== false) {
     addCommand('ollama', `printf '%s\\n' "$*" >> "$FAKE_CALLS"
 if [ "$1" = serve ]; then
   echo owned > "$FAKE_STATE"
+  printf '%s' "$OLLAMA_MODELS" > "$FAKE_MODEL_PATH_LOG"
   trap 'rm -f "$FAKE_STATE"; exit 0' TERM INT
   while :; do /bin/sleep 0.1; done
+fi
+if [ "$1" = pull ]; then
+  printf 'pull-host=%s\\n' "$OLLAMA_HOST" >> "$FAKE_CALLS"
+  printf '{"models":[{"name":"%s"}]}' "$2" > "$FAKE_MODEL_STATE"
 fi
 exit 0`);
   }
   addCommand('pnpm', `printf '%s\\n' "$*" >> "$FAKE_CALLS"
+if [ "$1" = install ]; then mkdir -p "$FAKE_ROOT/node_modules"; fi
 if [ "$1" = dev ] && [ "$FAKE_TERMINATE" = 1 ]; then kill -TERM "$PPID"; fi
 exit 0`);
 
@@ -49,17 +61,22 @@ exit 0`);
   const models = JSON.stringify({ models: modelNames.map((name) => ({ name })) });
   return {
     dir,
+    root,
     state,
     calls,
     env: {
       ...process.env,
       PATH: `${bin}:/usr/bin:/bin:${path.dirname(process.execPath)}`,
       FAKE_STATE: state,
+      FAKE_ROOT: root,
+      FAKE_MODEL_STATE: modelState,
+      FAKE_MODEL_PATH_LOG: path.join(dir, 'model-path.log'),
       FAKE_CALLS: calls,
       FAKE_MODELS: models,
       FAKE_NEVER_READY: '0',
       FAKE_TERMINATE: options.terminateOnDev ? '1' : '0',
       OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
+      OLLAMA_MODELS: '',
       OLLAMA_MODEL_ID: 'llama3.2:3b',
       SPECLENS_OLLAMA_STARTUP_ATTEMPTS: '3',
     },
@@ -67,8 +84,8 @@ exit 0`);
 }
 
 function run(harness: ReturnType<typeof makeHarness>, env: Record<string, string> = {}) {
-  return spawnSync('/bin/bash', [path.join(repoRoot, 'start.sh')], {
-    cwd: harness.dir,
+  return spawnSync('/bin/bash', [path.join(harness.root, 'start.sh')], {
+    cwd: harness.root,
     env: { ...harness.env, ...env },
     encoding: 'utf8',
     timeout: 5000,
@@ -108,6 +125,7 @@ describe('start.sh', () => {
     expect(callsOf(harness).match(/^serve$/gm)).toHaveLength(1);
     expect(result.stdout).toContain("modelo bootstrap 'llama3.2:3b'");
     expect(callsOf(harness)).toMatch(/^dev$/m);
+    expect(readFileSync(path.join(harness.dir, 'model-path.log'), 'utf8')).toBe(path.join(harness.root, 'models/ollama/models'));
   });
 
   it('bounds readiness waiting and continues in degraded mode when startup fails', () => {
@@ -143,6 +161,24 @@ describe('start.sh', () => {
     const result = run(harness);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("modelo bootstrap 'llama3.2:3b' não está instalado");
+  });
+
+  it('offers a confirmed first-run model pull and verifies the exact installed tag', () => {
+    const harness = makeHarness({ active: true, models: [] });
+    const result = run(harness, { SPECLENS_AUTO_PROVISION: '1' });
+    expect(result.status).toBe(0);
+    expect(callsOf(harness)).toContain('pull llama3.2:3b');
+    expect(callsOf(harness)).toContain('pull-host=127.0.0.1:11434');
+    expect(result.stdout).toContain("Modelo 'llama3.2:3b' provisionado e verificado");
+    expect(callsOf(harness)).toMatch(/^dev$/m);
+  });
+
+  it('installs lockfile dependencies during an explicitly authorized first run', () => {
+    const harness = makeHarness({ dependencies: false, active: true });
+    const result = run(harness, { SPECLENS_AUTO_PROVISION: '1' });
+    expect(result.status).toBe(0);
+    expect(callsOf(harness)).toContain('install --frozen-lockfile');
+    expect(callsOf(harness)).toMatch(/^dev$/m);
   });
 
   it('kills only the service process started by this script on shutdown', () => {
